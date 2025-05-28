@@ -1,6 +1,7 @@
 import pandas as pd
-from typing import List, Dict, Any
-from ._base import BaseData
+from celia.errors.data_handling_errors import UnSupportedDataTypeError
+from typing import List, Dict, Any, Tuple, Optional
+from celia.data._base import BaseData
 
 
 class PublicData(BaseData):
@@ -35,6 +36,7 @@ class PublicData(BaseData):
         - Continuous features: a tuple (min, max)
         - Categorical features: a list of allowed values
 
+
     Raises
     ------
     ValueError
@@ -66,42 +68,60 @@ class PublicData(BaseData):
 
     def __init__(
         self,
-        data: pd.DataFrame,
-        labels: pd.Series,
-        target_names: str,
-        continuous: List[str],
-        categorical: List[str],
-        immutable: List[str],
-        feasible_values: Dict[str, Any],
+        data: pd.DataFrame, # NOTE: To accept other data types later e.g dict
+        labels: pd.Series | List[str] | Tuple[str], # NOTE: Not a list?
+        target_name: str,
+        continuous: Optional[List[str]] = None,
+        categorical: Optional[List[str]] = None,
+        immutable: Optional[List[str]] = None,
+        feasible_values: Optional[Dict[str, Any]] = None,
     ):
-        self._data = data
+        try:
+            self._data = pd.DataFrame(data)
+        except Exception as e:
+            raise UnSupportedDataTypeError
+
+
         self._labels = labels
-        self._target_names = target_names
-        self._continuous = continuous
+        self._target_name = target_name
+        self._continuous = continuous # 
         self._categorical = categorical
         self._immutable = immutable
         self._feasible_values = feasible_values
-
+        
+        #NOTE: Convert the data to a pandas dataframe with polars too 
+        
+        
         self.validate_data()
 
     @property
     def data(self) -> pd.DataFrame:
+        """Getter for the data"""
         return self._data
 
     @property
     def labels(self) -> pd.Series:
+        """Getter for the label(s)"""
         return self._labels
 
     @property
     def target_name(self) -> str:
-        return self._target_names
+        """Getter for the target name"""
+        return self._target_name
 
     @property
     def continuous(self) -> List[str]:
+        """Getter for the continuous variables 
+
+        Returns:
+            List[str]: _description_
+        """
         return self._continuous
 
     @property
     def categorical(self) -> List[str]:
+        """Getter for categorical variables
+        """
         return self._categorical
 
     @property
@@ -130,14 +150,14 @@ class PublicData(BaseData):
         ValueError
             If any feature in the list is not found in self.data.columns.
         """
-        if not hasattr(self, 'data') or self.data is None:
-            raise AttributeError("Attribute 'data' must be defined before validation.")
+        # if not hasattr(self, 'data') or self.data is None:
+        #     raise AttributeError("Attribute 'data' must be defined before validation.")
 
         missing = set(feature_list) - set(self.data.columns)
         if missing:
             raise ValueError(f"The following {name} features are not in the dataset: {missing}")
 
-    def _check_data_label_alignment(self, data: pd.DataFrame, labels: pd.Series) -> None:
+    def _check_data_label_alignment(self, labels: pd.Series) -> None:
         """
         Ensure that the number of samples in data and labels match.
 
@@ -153,10 +173,10 @@ class PublicData(BaseData):
         ValueError
             If the number of rows in data does not match the number of labels.
         """
-        if len(data) != len(labels):
+        if len(self._data) != len(labels):
             raise ValueError(
                 f"Data and labels must have the same number of instances: "
-                f"{len(data)} rows in data vs {len(labels)} labels."
+                f"{len(self._data)} rows in self._data vs {len(labels)} labels."
             )
 
     def validate_data(self) -> None:
@@ -175,3 +195,8 @@ class PublicData(BaseData):
         self._check_data_label_alignment(self.data, self.labels)
         self._check_range_dict_validity(self.feasible_values)
         self._check_feature_overlap(self.continuous, self.categorical)
+
+
+
+if __name__ == "__main__":
+    PublicData("hello",["label1"],target_name="target")
