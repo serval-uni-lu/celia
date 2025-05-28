@@ -8,6 +8,8 @@ authors = [
 ]
 requires-python = ">=3.12.10"
 dependencies = [
+    "certifai",
+    "dice-ml",
     "fastjsonschema==2.21.1",
     "jsonschema==4.23.0",
     "matplotlib==3.10.1",
@@ -29,3 +31,10 @@ dev = [
     "category-encoders>=2.7.0",
     "xgboost>=3.0.1",
 ]
+    "pytest>=8.3.5",
+    "xgboost>=3.0.1",
+]
+
+[tool.uv.sources]
+certifai = { git = "https://github.com/alanpar97/CERTIFAI.git" }
+dice-ml = { git = "https://github.com/alanpar97/DiCE.git" }

@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-from .explainers.certifai import CERTIFAI
-from .explainers.dice import Data, Model, Dice
 from .explainers.nnce import NearestNeighborCE
 
 

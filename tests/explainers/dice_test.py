@@ -1,6 +1,6 @@
 import joblib
 import pandas as pd
-from certifai import CERTIFAI
+from dice_ml import Data, Dice, Model
 from tests.test_constants import *
 
 
@@ -22,27 +22,16 @@ mutable_features = X_train.columns.difference(immutable_features).tolist()
 continuous_features = X_train.columns.difference(categorical_cols).tolist()
 feasible_ranges = GERMAN_CREDIT_FEASIBLE_VALUES
 
-certifai = CERTIFAI(Pm=0.1 , Pc=0.1)
-certifai.set_constraints(x=X_train, fixed=immutable_features)
+d = Data(dataframe=df_train, continuous_features=continuous_features, permitted_range=feasible_ranges,outcome_name='target')
+m = Model(model=model, backend='sklearn', model_type='classifier')
+dice_random = Dice(d, m, method="random")
 
 itbe = X_test.iloc[0].to_frame().T
 
-results = certifai.fit(
-            model,
-            x=itbe,
-            trained_with_columns=True,
-            classification=True,
-            generations=3,
-            model_type="sklearn",
-            distance='L1',
-            select_retain=1000,
-            gen_retain=500,
-            final_k=1,
-            verbose=False)
+results_random = dice_random.generate_counterfactuals(
+            itbe,
+            total_CFs=3,
+            features_to_vary=mutable_features,
+            permitted_range=feasible_ranges)
 
-counterfactual_list = certifai.results[0][1]
-
-columns = list(itbe.columns) + ['Target']
-counterfactuals_df = pd.DataFrame(counterfactual_list, columns=columns)
-
-print(counterfactuals_df)
+counterfactual_list = results_random.cf_examples_list[0].final_cfs_df
