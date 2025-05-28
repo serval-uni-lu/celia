@@ -65,7 +65,7 @@ print(classification_report(y_test, y_pred, target_names=le.classes_))
 
 # Save model and encoder
 
-joblib.dump(clf, "models/xgboost_model_credit.pkl")
-joblib.dump(cat_encoder, "encoders/catboost_encoder_credit.pkl")
-joblib.dump(le, "encoders/label_encoder_credit.pkl")
+joblib.dump(clf, "xgboost_model_credit.pkl")
+joblib.dump(cat_encoder, "../encoders/catboost_encoder_credit.pkl")
+joblib.dump(le, "../encoders/label_encoder_credit.pkl")
 print("Model and encoders saved.")
