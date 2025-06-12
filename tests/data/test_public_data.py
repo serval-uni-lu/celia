@@ -14,7 +14,7 @@ def valid_inputs():
     return {
         "data": df,
         "labels": labels,
-        "target_names": ["target"],
+        "target_name": "target",
         "continuous": ["age", "income"],
         "categorical": ["gender"],
         "immutable": ["age"],
@@ -61,4 +61,45 @@ def test_invalid_range_in_feasible_values(valid_inputs):
 def test_feature_not_in_data_in_feasible_values(valid_inputs):
     valid_inputs["feasible_values"]["occupation"] = ["engineer", "doctor"]
     with pytest.raises(ValueError, match="not in data"):
+        PublicData(**valid_inputs)
+
+def test_invalid_data_type(valid_inputs):
+    valid_inputs["data"] = valid_inputs["data"].values  # numpy array instead of DataFrame
+    with pytest.raises(TypeError, match="data.*pandas DataFrame"):
+        PublicData(**valid_inputs)
+
+
+def test_invalid_labels_type(valid_inputs):
+    valid_inputs["labels"] = valid_inputs["labels"].values  # numpy array instead of Series
+    with pytest.raises(TypeError, match="labels.*pandas Series"):
+        PublicData(**valid_inputs)
+
+
+def test_invalid_target_name_type(valid_inputs):
+    valid_inputs["target_name"] = 123  # should be a string
+    with pytest.raises(TypeError, match="target_name.*string"):
+        PublicData(**valid_inputs)
+
+
+def test_invalid_continuous_type(valid_inputs):
+    valid_inputs["continuous"] = "age"  # should be list of strings
+    with pytest.raises(TypeError, match="continuous.*list"):
+        PublicData(**valid_inputs)
+
+
+def test_invalid_categorical_type(valid_inputs):
+    valid_inputs["categorical"] = {"gender": 1}  # should be list
+    with pytest.raises(TypeError, match="categorical.*list"):
+        PublicData(**valid_inputs)
+
+
+def test_invalid_immutable_type(valid_inputs):
+    valid_inputs["immutable"] = 3.14  # should be list
+    with pytest.raises(TypeError, match="immutable.*list"):
+        PublicData(**valid_inputs)
+
+
+def test_invalid_feasible_values_type(valid_inputs):
+    valid_inputs["feasible_values"] = [("age", (18, 65))]  # should be dict
+    with pytest.raises(TypeError, match="feasible_values.*dictionary"):
         PublicData(**valid_inputs)

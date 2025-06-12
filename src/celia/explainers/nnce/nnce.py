@@ -1,7 +1,11 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import pairwise_distances
-from typing import List, Union
+from typing import List, Union, Tuple
+from celia.explainers import RegressorExplainer
+from celia.model import BaseModel
+from celia.data import BaseData, PublicData
+
 
 class NearestNeighborCE:
     def __init__(self,
@@ -80,3 +84,64 @@ class NearestNeighborCE:
         counterfactuals[self.target_name] = counterfactual_preds
 
         return counterfactuals.reset_index(drop=True)
+
+class NNCERegressorExplainer(RegressorExplainer):
+    """
+    Concrete implementation of RegressorExplainer for Nearest Neighbor-based Counterfactual Explanations.
+    This class wraps the NearestNeighborCE method to generate counterfactual explanations
+    for regression tasks using public training data. It enforces the use of PublicData
+    and validates that the input data meets the expected structure required by the explainer.
+
+    Parameters
+    ----------
+    model : BaseModel
+        The predictive regression model to be explained. Must implement the BaseModel interface
+        with a `predict` method.
+
+    data : PublicData
+        The public dataset object, containing the training data, target labels, and metadata
+        such as feature types and feasible values.
+
+    *args : Any
+        Additional positional arguments passed to the parent RegressorExplainer class.
+
+    **kwargs : Any
+        Additional keyword arguments. Supports the following optional keys:
+        - verbose (bool): If True, enables verbose output during CE generation.
+
+    Raises
+    ------
+    ValueError
+        If the provided data is not an instance of PublicData.
+
+    Attributes
+    ----------
+    model : BaseModel
+        The regression model to be explained.
+
+    data : PublicData
+        The dataset used to generate counterfactual explanations.
+
+    explainer : NearestNeighborCE
+        Instance of the NearestNeighborCE class initialized with training data, model,
+        and target variable for regression tasks.
+    """
+
+    def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
+        #Assert that data is an instance of PublicData
+        if not isinstance(data, PublicData):
+            raise ValueError("data must be an instance of PublicData")
+        super().__init__(model, data, *args, **kwargs)
+
+    def _create_explainer(self, model: BaseModel, data: PublicData, *args, **kwargs):
+        target_name = data.target_name
+        train_data = data.data
+        verbose = kwargs.pop("verbose", False)
+        return NearestNeighborCE(train_data, model, target_name, task_type='regression', verbose=verbose)
+
+    def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
+                                  target_range: Union[List[float], Tuple[float, float]],
+                                 *args, **kwargs) -> pd.DataFrame:
+
+        #TODO: Implement _generate_counterfactuals method
+        return pd.DataFrame(data=0, index=[0], columns=["Placeholder"])
