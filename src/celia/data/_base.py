@@ -75,6 +75,14 @@ class BaseData(ABC):
         """
         pass
 
+    @abstractmethod
+    def _validate_inputs(self, *args, **kwargs):
+        """
+        Abstract method to validate inputs. This should be implemented in subclasses depending on
+        the extra arguments they receive.
+        """
+        raise NotImplementedError("Subclasses must implement _validate_inputs method.")
+
     def _check_range_dict_validity(self, ranges: Dict[str, Any]) -> None:
         """
         Validate structure of the feasible_values dictionary.

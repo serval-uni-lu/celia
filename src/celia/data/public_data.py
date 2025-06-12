@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Set, Union
 from ._base import BaseData
 
 
@@ -15,11 +15,14 @@ class PublicData(BaseData):
     data : pd.DataFrame
         The feature matrix used to train the model, with shape (n_samples, n_features).
 
-    labels : pd.Series
+    targets : pd.Series
         The target labels corresponding to the training data, with shape (n_samples,).
 
-    target_names : List[str]
-        The name(s) of the target variable(s). Typically, a single string for most use cases.
+    target_name : str
+        The name of the target variable. It should be a single string representing the target column in `labels`.
+
+    column_names : Optional[Union[List[str], Set[str]]]
+        A list or set of column names to be considered as features. If not provided, all columns in `data` are used.
 
     continuous : List[str]
         Names of features considered continuous (i.e., real-valued and bounded by a range).
@@ -45,11 +48,14 @@ class PublicData(BaseData):
     data : pd.DataFrame
         Returns the stored feature matrix.
 
-    labels : pd.Series
+    targets : pd.Series
         Returns the stored target labels.
 
-    target_name : List[str]
-        Returns the list of target variable names.
+    target_name : str
+        Returns the name of target variable.
+
+    column_names: Optional[Union[List[str], Set[str]]]
+        Returns the set of column names in the dataset. If not provided, it defaults to all columns in `data`.
 
     continuous : List[str]
         Returns the list of continuous feature names.
@@ -67,16 +73,18 @@ class PublicData(BaseData):
     def __init__(
         self,
         data: pd.DataFrame,
-        labels: pd.Series,
-        target_names: str,
-        continuous: List[str],
-        categorical: List[str],
-        immutable: List[str],
-        feasible_values: Dict[str, Any],
+        targets: pd.Series,
+        target_name: str,
+        column_names: Optional[Union[List[str], Set[str]]] = None,
+        continuous: Optional[List[str]] = None,
+        categorical: Optional[List[str]] = None,
+        immutable: Optional[List[str]] = None,
+        feasible_values: Optional[Dict[str, Any]] = None,
     ):
         self._data = data
-        self._labels = labels
-        self._target_names = target_names
+        self._columns = set(data.columns) if column_names is None else set(column_names)
+        self._targets = targets
+        self._target_name = target_name
         self._continuous = continuous
         self._categorical = categorical
         self._immutable = immutable
@@ -89,12 +97,16 @@ class PublicData(BaseData):
         return self._data
 
     @property
-    def labels(self) -> pd.Series:
-        return self._labels
+    def columns(self) -> Set[str]:
+        return self._columns
+
+    @property
+    def targets(self) -> pd.Series:
+        return self._targets
 
     @property
     def target_name(self) -> str:
-        return self._target_names
+        return self._target_name
 
     @property
     def continuous(self) -> List[str]:
@@ -137,27 +149,44 @@ class PublicData(BaseData):
         if missing:
             raise ValueError(f"The following {name} features are not in the dataset: {missing}")
 
-    def _check_data_label_alignment(self, data: pd.DataFrame, labels: pd.Series) -> None:
+    @staticmethod
+    def _check_data_label_alignment(self, data: pd.DataFrame, targets: pd.Series) -> None:
         """
-        Ensure that the number of samples in data and labels match.
+        Ensure that the number of samples in data and targets match.
 
         Parameters
         ----------
         data : pd.DataFrame
             The feature matrix used to train the model.
-        labels : pd.Series
-            The target labels corresponding to the data.
+        targets : pd.Series
+            The target targets corresponding to the data.
 
         Raises
         ------
         ValueError
-            If the number of rows in data does not match the number of labels.
+            If the number of rows in data does not match the number of targets.
         """
-        if len(data) != len(labels):
+        if len(data) != len(targets):
             raise ValueError(
-                f"Data and labels must have the same number of instances: "
-                f"{len(data)} rows in data vs {len(labels)} labels."
+                f"Data and targets must have the same number of instances: "
+                f"{len(data)} rows in data vs {len(targets)} targets."
             )
+
+    def _validate_inputs(self):
+        if not isinstance(self.data, pd.DataFrame):
+            raise TypeError(f"'data' must be a pandas DataFrame, got {type(self.data).__name__}")
+        if not isinstance(self.targets, pd.Series):
+            raise TypeError(f"'targets' must be a pandas Series, got {type(self.targets).__name__}")
+        if not isinstance(self.target_name, str):
+            raise TypeError(f"'target_name' must be a string, got {type(self.target_name).__name__}")
+        if self.continuous is not None and not isinstance(self.continuous, list):
+            raise TypeError(f"'continuous' must be a list of strings or None, got {type(self.continuous).__name__}")
+        if self.categorical is not None and not isinstance(self.categorical, list):
+            raise TypeError(f"'categorical' must be a list of strings or None, got {type(self.categorical).__name__}")
+        if self.immutable is not None and not isinstance(self.immutable, list):
+            raise TypeError(f"'immutable' must be a list of strings or None, got {type(self.immutable).__name__}")
+        if self.feasible_values is not None and not isinstance(self.feasible_values, dict):
+            raise TypeError(f"'feasible_values' must be a dictionary or None, got {type(self.feasible_values).__name__}")
 
     def validate_data(self) -> None:
         """
@@ -165,13 +194,20 @@ class PublicData(BaseData):
 
         This method checks that:
         - All feature names in continuous, categorical, and immutable lists exist in the data.
-        - The number of samples in data matches the number of labels.
+        - The number of samples in data matches the number of targets.
         - Feasible values for features are valid.
         - No features are shared between continuous and categorical lists.
         """
-        self._check_feature_names_exist(self.continuous, "continuous")
-        self._check_feature_names_exist(self.categorical, "categorical")
-        self._check_feature_names_exist(self.immutable, "immutable")
-        self._check_data_label_alignment(self.data, self.labels)
-        self._check_range_dict_validity(self.feasible_values)
+        self._validate_inputs()
+        self._check_data_label_alignment(self.data, self.targets)
         self._check_feature_overlap(self.continuous, self.categorical)
+        if self.continuous is not None:
+            self._check_feature_names_exist(self.continuous, "continuous")
+        if self.categorical is not None:
+            self._check_feature_names_exist(self.categorical, "categorical")
+        if self.immutable is not None:
+            self._check_feature_names_exist(self.immutable, "immutable")
+        if self.feasible_values is not None:
+            self._check_range_dict_validity(self.feasible_values)
+
+
