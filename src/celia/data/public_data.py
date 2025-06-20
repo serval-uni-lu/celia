@@ -150,7 +150,7 @@ class PublicData(BaseData):
             raise ValueError(f"The following {name} features are not in the dataset: {missing}")
 
     @staticmethod
-    def _check_data_label_alignment(self, data: pd.DataFrame, targets: pd.Series) -> None:
+    def _check_data_label_alignment(data: pd.DataFrame, targets: pd.Series) -> None:
         """
         Ensure that the number of samples in data and targets match.
 
@@ -199,7 +199,7 @@ class PublicData(BaseData):
         - No features are shared between continuous and categorical lists.
         """
         self._validate_inputs()
-        self._check_data_label_alignment(self.data, self.targets)
+        self._check_data_label_alignment(data=self.data, targets=self.targets)
         self._check_feature_overlap(self.continuous, self.categorical)
         if self.continuous is not None:
             self._check_feature_names_exist(self.continuous, "continuous")

@@ -293,12 +293,16 @@ class RegressorExplainer(BaseExplainer):
         pd.DataFrame
             A DataFrame containing one or more counterfactual samples.
         """
+        super().validate_sample(sample)
         self._validate_target_range(target_range)
         filtered_samples = self._filter_samples_within_target_range(sample, target_range)
-        return self._generate_counterfactuals(filtered_samples, target_range, *args, **kwargs)
+        return self._generate_counterfactuals(sample=filtered_samples,
+                                              target_range=target_range,
+                                              *args,
+                                              **kwargs)
 
     @staticmethod
-    def _validate_target_range(self, target_range: Union[List[float], Tuple[float, float]]) -> None:
+    def _validate_target_range(target_range: Union[List[float], Tuple[float, float]]) -> None:
         """
         Validate the target range for regression counterfactuals.
 
@@ -361,28 +365,7 @@ class RegressorExplainer(BaseExplainer):
 
     def _validate_sample(self, sample: Union[pd.DataFrame, pd.Series],
                          target_range: Union[List[float], Tuple[float, float]] = None, *args, **kwargs) -> None:
-        """
-        Validate the input sample for generating counterfactuals in regression tasks.
-
-        In the context of regression, this method checks and filters samples based on the target range.
-        Although target_range has None as default, it is expected to be provided when generating counterfactuals.
-
-        Parameters
-        ----------
-        sample : Union[pd.DataFrame, pd.Series]
-            A single instance or multiple instances for which counterfactual explanations are to be generated.
-
-        target_range : Union[List[float], Tuple[float, float]]
-            A desired output range (min, max) that counterfactual predictions should aim to fall within.
-            If None, ValueError will be raised.
-
-        Raises
-        ------
-        ValueError
-            If the target_range is invalid. (e.g. min >= max) or if it is not provided.
-        """
-        #TODO: If no additional validation is needed, we can move _validate_target_range logic to the this method
-        self._validate_target_range(target_range)
+        pass
 
     @abstractmethod
     def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],

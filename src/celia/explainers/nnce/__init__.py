@@ -1,3 +1,3 @@
-from .nnce import NearestNeighborCE
+from .nnce import NNCERegressorExplainer
 
-__all__ = ["NearestNeighborCE"]
+__all__ = ["NNCERegressorExplainer"]

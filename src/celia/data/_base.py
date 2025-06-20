@@ -105,7 +105,7 @@ class BaseData(ABC):
             if feat not in self.data.columns:
                 raise ValueError(f"Feature '{feat}' in feasible_values is not in data.")
 
-            if isinstance(val, tuple):
+            if isinstance(val, tuple): # Continuous feature range
                 if len(val) != 2 or not all(isinstance(v, (int, float)) for v in val):
                     raise ValueError(f"Invalid range tuple for feature '{feat}': {val}")
                 if val[0] >= val[1]:
@@ -113,10 +113,12 @@ class BaseData(ABC):
                         f"Invalid range for feature '{feat}': min must be less than max, got {val}"
                     )
 
-            elif isinstance(val, list):
-                if not all(isinstance(v, (str, int)) for v in val):
+            elif isinstance(val, list): # Categorical feature values
+                first_type = type(val[0])
+                if not all(isinstance(v, first_type) for v in val):
                     raise ValueError(
-                        f"Invalid list of values for categorical feature '{feat}': {val}"
+                        f"All feasible values for categorical feature '{feat}' "
+                        f"must share the same type; got types {[type(v).__name__ for v in val]}"
                     )
 
             else:

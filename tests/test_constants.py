@@ -66,3 +66,12 @@ GERMAN_CREDIT_FEASIBLE_VALUES = {'checking_status': [0.6024752475247525,
  'foreign_worker': [0.6930142302716689, 0.8862068965517241]}
 
 GERMAN_CREDIT_IMMUTABLE_FEATURES = ['personal_status', 'age', 'num_dependents', 'foreign_worker']
+
+KIDNEY_CATEGORIC_COLUMNS = ['status','sex','disease_type']
+KIDNEY_FEASIBLE_VALUES = {'patient': (1,38),
+                          'time': (2,562),
+                          'status': [0.0, 1.0],
+                          'age': (10,69),
+                          'sex': [0.0, 1.0],
+                          'disease_type': [0.0, 1.0, 2.0, 3.0]}
+KIDNEY_IMMUTABLE_FEATURE = ['sex']
