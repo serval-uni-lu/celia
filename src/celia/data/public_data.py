@@ -83,11 +83,8 @@ class PublicData(BaseData):
         immutable: Optional[List[str]] = None,
         feasible_values: Optional[Dict[str, Any]] = None,
     ):
-        try:
-            self._data = pd.DataFrame(data)
-        except Exception as e:
-            raise UnSupportedDataTypeError
-        self._columns = set(data.columns) if column_names is None else set(column_names)
+        self._data = data
+        self._column_names = list(data.columns) if column_names is None else list(column_names)
         self._targets = targets
         self._target_name = target_name
         self._continuous = continuous
@@ -106,9 +103,8 @@ class PublicData(BaseData):
         return self._data
 
     @property
-    def columns(self) -> Set[str]:
-        """Getter for column names"""
-        return self._columns
+    def column_names(self) -> List[str]:
+        return self._column_names
 
     @property
     def targets(self) -> pd.Series:
@@ -171,7 +167,7 @@ class PublicData(BaseData):
             raise ValueError(f"The following {name} features are not in the dataset: {missing}")
 
     @staticmethod
-    def _check_data_label_alignment(self, data: pd.DataFrame, targets: pd.Series) -> None:
+    def _check_data_label_alignment(data: pd.DataFrame, targets: pd.Series) -> None:
         """
         Ensure that the number of samples in data and targets match.
 
@@ -187,7 +183,7 @@ class PublicData(BaseData):
         ValueError
             If the number of rows in data does not match the number of targets.
         """
-        if len(self._data) != len(targets):
+        if len(data) != len(targets):
             raise ValueError(
                 f"Data and targets must have the same number of instances: "
                 f"{len(data)} rows in data vs {len(targets)} targets."
@@ -220,7 +216,7 @@ class PublicData(BaseData):
         - No features are shared between continuous and categorical lists.
         """
         self._validate_inputs()
-        self._check_data_label_alignment(self.data, self.targets)
+        self._check_data_label_alignment(data=self.data, targets=self.targets)
         self._check_feature_overlap(self.continuous, self.categorical)
         if self.continuous is not None:
             self._check_feature_names_exist(self.continuous, "continuous")

@@ -21,7 +21,7 @@ class NearestNeighborCE:
         self.task_type = task_type
         self.verbose = verbose
 
-    def generate_counterfactuals(self,
+    def nnce_generate_counterfactuals(self,
                                  instance: pd.Series,
                                  desired_output: Union[int, float, List[float]],
                                  n_counterfactuals: int = 1,
@@ -143,5 +143,23 @@ class NNCERegressorExplainer(RegressorExplainer):
                                   target_range: Union[List[float], Tuple[float, float]],
                                  *args, **kwargs) -> pd.DataFrame:
 
-        #TODO: Implement _generate_counterfactuals method
-        return pd.DataFrame(data=0, index=[0], columns=["Placeholder"])
+        # Check if user provided n_counterfactuals in kwargs, else default to 1
+        n_counterfactuals = kwargs.pop("n_counterfactuals", 1)
+
+        # Check if self.data has mutable_features, else default to None
+        mutable_features = None
+        if self.data.immutable is not None:
+            mutable_features = self.data.immutable
+
+        return self.explainer.nnce_generate_counterfactuals(instance=sample,
+                                                     desired_output=target_range,
+                                                     n_counterfactuals=n_counterfactuals,
+                                                     mutable_features=mutable_features)
+
+    def _validate_sample(self, sample: Union[pd.DataFrame, pd.Series],
+                         target_range: Union[List[float], Tuple[float, float]] = None, *args, **kwargs) -> None:
+
+        # Raise error if sample has more than one row if it's a DataFrame
+        if isinstance(sample, pd.DataFrame) and sample.shape[0] > 1:
+            raise ValueError("NNCE only explains one instance at a time."
+                             "Sample must be a single row DataFrame or Series")
