@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
-import pandas as pd
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
+from celia.errors.user_configuration_erros import CELIAConfigurationError
 
 
 class BaseData(ABC):
@@ -23,7 +23,7 @@ class BaseData(ABC):
 
     @property
     @abstractmethod
-    def continuous(self) -> List[str]:
+    def continuous_column_names(self) -> List[str]:
         """
         Return the names of continuous features.
 
@@ -36,7 +36,7 @@ class BaseData(ABC):
 
     @property
     @abstractmethod
-    def categorical(self) -> List[str]:
+    def categorical_column_names(self) -> List[str]:
         """
         Return the names of categorical features.
 
@@ -49,7 +49,7 @@ class BaseData(ABC):
 
     @property
     @abstractmethod
-    def immutable(self) -> List[str]:
+    def immutable_column_names(self) -> List[str]:
         """
         Return the names of immutable features (those that cannot change in counterfactuals).
 
@@ -116,7 +116,7 @@ class BaseData(ABC):
             elif isinstance(val, list): # Categorical feature values
                 first_type = type(val[0])
                 if not all(isinstance(v, first_type) for v in val):
-                    raise ValueError(
+                    raise CELIAConfigurationError(
                         f"All feasible values for categorical feature '{feat}' "
                         f"must share the same type; got types {[type(v).__name__ for v in val]}"
                     )
@@ -145,7 +145,7 @@ class BaseData(ABC):
         """
         overlap = set(continuous).intersection(categorical)
         if overlap:
-            raise ValueError(
+            raise CELIAConfigurationError(
                 f"The following features are defined as both continuous and categorical: {overlap}"
             )
 
@@ -155,11 +155,11 @@ class BaseData(ABC):
 
         Raises
         ------
-        ValueError or TypeError
+        CELIAConfigurationError
             If any of the internal consistency checks fail.
         """
         # Ensure continuous and categorical are disjoint
-        self._check_feature_overlap(self.continuous, self.categorical)
+        self._check_feature_overlap(self.continuous_column_names, self.categorical_column_names)
 
         # Ensure feasible_values is valid
         self._check_range_dict_validity(self.feasible_values)

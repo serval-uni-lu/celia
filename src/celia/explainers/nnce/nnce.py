@@ -4,7 +4,8 @@ from sklearn.metrics import pairwise_distances
 from typing import List, Union, Tuple
 from celia.explainers import RegressorExplainer
 from celia.model import BaseModel
-from celia.data import BaseData, PublicData
+from celia.data import PublicData
+from celia.errors.user_configuration_erros import CELIAConfigurationError
 
 
 class NearestNeighborCE:
@@ -130,7 +131,7 @@ class NNCERegressorExplainer(RegressorExplainer):
     def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
         #Assert that data is an instance of PublicData
         if not isinstance(data, PublicData):
-            raise ValueError("data must be an instance of PublicData")
+            raise CELIAConfigurationError("data must be an instance of PublicData")
         super().__init__(model, data, *args, **kwargs)
 
     def _create_explainer(self, model: BaseModel, data: PublicData, *args, **kwargs):
@@ -147,19 +148,20 @@ class NNCERegressorExplainer(RegressorExplainer):
         n_counterfactuals = kwargs.pop("n_counterfactuals", 1)
 
         # Check if self.data has mutable_features, else default to None
-        mutable_features = None
-        if self.data.immutable is not None:
-            mutable_features = self.data.immutable
+        if self.data.immutable_column_names is None:
+            mutable = self.data.column_names
+        else:
+            mutable = [col for col in self.data.column_names if col not in self.data.immutable_column_names]
 
         return self.explainer.nnce_generate_counterfactuals(instance=sample,
                                                      desired_output=target_range,
                                                      n_counterfactuals=n_counterfactuals,
-                                                     mutable_features=mutable_features)
+                                                     mutable_features=mutable)
 
     def _validate_sample(self, sample: Union[pd.DataFrame, pd.Series],
                          target_range: Union[List[float], Tuple[float, float]] = None, *args, **kwargs) -> None:
 
         # Raise error if sample has more than one row if it's a DataFrame
         if isinstance(sample, pd.DataFrame) and sample.shape[0] > 1:
-            raise ValueError("NNCE only explains one instance at a time."
+            raise CELIAConfigurationError("NNCE only explains one instance at a time."
                              "Sample must be a single row DataFrame or Series")

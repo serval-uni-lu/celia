@@ -1,7 +1,7 @@
 from typing import Any, Union, List, Tuple
 import inspect
 import pandas as pd
-from celia.data import PublicData, BaseData
+from celia.data import PublicData
 from celia.model import BaseModel
 from celia.explainers import RegressorExplainer
 import dice_ml
@@ -65,7 +65,7 @@ class DiceRegressorExplainer(RegressorExplainer):
         dice_kwargs = kwargs
 
         d = dice_ml.Data(dataframe=data_with_targets,
-                         continuous_features = data.continuous or None,
+                         continuous_features = data.continuous_column_names or None,
                          permitted_range = data.feasible_values or None,
                          outcome_name=data.target_name, **data_kwargs)
         m = dice_ml.Model(model=model, backend='sklearn', model_type="regressor", **model_kwargs)
@@ -76,7 +76,7 @@ class DiceRegressorExplainer(RegressorExplainer):
                                   target_range: Union[List[float], Tuple[float, float]],
                                   *args, **kwargs) -> pd.DataFrame:
 
-        features_to_vary = [col for col in self.data.column_names if col not in self.data.immutable] if self.data.immutable else "all"
+        features_to_vary = [col for col in self.data.column_names if col not in self.data.immutable_column_names] if self.data.immutable_column_names else "all"
 
         results = self.explainer.generate_counterfactuals(
             query_instances=sample,

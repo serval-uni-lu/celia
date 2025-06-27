@@ -1,8 +1,7 @@
 from typing import Union, List, Tuple
-
 import numpy as np
 import pandas as pd
-from celia.explainers import BaseExplainer, RegressorExplainer
+from celia.explainers import RegressorExplainer
 from celia.data import PublicData
 from certifai import CERTIFAI
 
@@ -59,7 +58,7 @@ class CertifaiRegressorExplainer(RegressorExplainer):
         Pm = kwargs.pop("Pm", 0.1)
         Pc = kwargs.pop("Pc", 0.1)
         exp = CERTIFAI(Pm=Pm, Pc=Pc, pandas_dataset=data.data)
-        exp.set_constraints(fixed=data.immutable or None)
+        exp.set_constraints(fixed=data.immutable_column_names or None)
         return exp
 
     def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
