@@ -92,8 +92,10 @@ class CertifaiRegressorExplainer(RegressorExplainer):
             verbose=verbose
         )
 
+        if len(self.explainer.results[0][1]) == 0:
+            raise ValueError("No counterfactuals generated. Check the input parameters and data.")
         counterfactuals_list = self.explainer.results[0][1]
-        columns = list(self.data.columns) + [self.data.target_name]
+        columns = list(self.data.column_names) + [self.data.target_name]
         counterfactuals_df = pd.DataFrame(counterfactuals_list, columns=columns)
         return counterfactuals_df
 

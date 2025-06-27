@@ -190,20 +190,31 @@ class BaseExplainer(ABC):
         ValueError
             If the sample does not contain the columns defined in self.data.
         """
-        #TODO: Add logic to handle PrivateData
+
         if isinstance(self.data, PublicData):
-            required_columns = self.data.columns
+            required_columns = self.data.column_names
         else:
             raise ValueError(f"Data must be an instance of PublicData, got {type(self.data)}")
 
         if isinstance(sample, pd.Series):
-            sample_columns = set(sample.index)
+            sample_columns = list(sample.index)
         else:
-            sample_columns = set(sample.columns)
+            sample_columns = list(sample.columns)
 
-        if sample_columns != required_columns:
-            missing = required_columns - sample_columns
-            extra = sample_columns - required_columns
+        #Lowercase everything for case-insensitive matching
+        sample_lower = [c.lower() for c in sample_columns]
+        required_lower = [c.lower() for c in required_columns]
+
+        # Duplicate check of sample columns
+        if len(sample_lower) != len(set(sample_lower)):
+            dupes = {c for c in sample_lower if sample_lower.count(c) > 1}
+            raise ValueError(f"Duplicate column names in sample: {sorted(dupes)}")
+
+        sample_columns_set = set(sample_columns)
+        required_columns_set = set(required_columns)
+        if sample_columns_set != required_columns_set:
+            missing = required_columns_set - sample_columns_set
+            extra = sample_columns_set - required_columns_set
             msg = []
             if missing:
                 msg.append(f"Missing columns: {sorted(missing)}")
@@ -296,6 +307,8 @@ class RegressorExplainer(BaseExplainer):
         super().validate_sample(sample)
         self._validate_target_range(target_range)
         filtered_samples = self._filter_samples_within_target_range(sample, target_range)
+        if filtered_samples.empty:
+            raise ValueError("No samples outside the target range. Cannot generate counterfactuals.")
         return self._generate_counterfactuals(sample=filtered_samples,
                                               target_range=target_range,
                                               *args,

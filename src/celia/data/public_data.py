@@ -82,7 +82,7 @@ class PublicData(BaseData):
         feasible_values: Optional[Dict[str, Any]] = None,
     ):
         self._data = data
-        self._columns = set(data.columns) if column_names is None else set(column_names)
+        self._column_names = list(data.columns) if column_names is None else list(column_names)
         self._targets = targets
         self._target_name = target_name
         self._continuous = continuous
@@ -97,8 +97,8 @@ class PublicData(BaseData):
         return self._data
 
     @property
-    def columns(self) -> Set[str]:
-        return self._columns
+    def column_names(self) -> List[str]:
+        return self._column_names
 
     @property
     def targets(self) -> pd.Series:
