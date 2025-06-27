@@ -1,6 +1,6 @@
 import pandas as pd
 from celia.errors.data_handling_errors import UnSupportedDataTypeError
-from typing import List, Dict, Any, Tuple, Optional, Optional, Set, Union
+from typing import List, Dict, Any, Tuple, Optional, Set, Union
 from celia.data._base import BaseData
 
 
@@ -77,11 +77,11 @@ class PublicData(BaseData):
         data: pd.DataFrame, # NOTE: To accept other data types later e.g dict
         targets: pd.Series | List[str] | Tuple[str], # NOTE: Not a list?
         target_name: str,
-        column_name: Optional[Union[List[str], Set[str]]] = None,
-        continuous: Optional[Optional[List[str]] = None] = None,
-        categorical: Optional[Optional[List[str]] = None] = None,
-        immutable: Optional[Optional[List[str]] = None] = None,
-        feasible_values: Optional[Optional[Dict[str, Any]] = None] = None,
+        column_names: Optional[Union[List[str], Set[str]]] = None,
+        continuous: Optional[List[str]] = None,
+        categorical: Optional[List[str]] = None,
+        immutable: Optional[List[str]] = None,
+        feasible_values: Optional[Dict[str, Any]] = None,
     ):
         try:
             self._data = pd.DataFrame(data)
@@ -107,10 +107,12 @@ class PublicData(BaseData):
 
     @property
     def columns(self) -> Set[str]:
+        """Getter for column names"""
         return self._columns
 
     @property
     def targets(self) -> pd.Series:
+        """Getter for target labels"""
         return self._targets
 
     @property
@@ -135,10 +137,12 @@ class PublicData(BaseData):
 
     @property
     def immutable(self) -> List[str]:
+        """Getter for immutable features"""
         return self._immutable
 
     @property
     def feasible_values(self) -> Dict[str, Any]:
+        """Getter for feasible values"""
         return self._feasible_values
 
     def _check_feature_names_exist(self, feature_list: List[str], name: str) -> None:
@@ -183,7 +187,7 @@ class PublicData(BaseData):
         ValueError
             If the number of rows in data does not match the number of targets.
         """
-        if len(self._data) != len(labels):
+        if len(self._data) != len(targets):
             raise ValueError(
                 f"Data and targets must have the same number of instances: "
                 f"{len(data)} rows in data vs {len(targets)} targets."
@@ -218,6 +222,14 @@ class PublicData(BaseData):
         self._validate_inputs()
         self._check_data_label_alignment(self.data, self.targets)
         self._check_feature_overlap(self.continuous, self.categorical)
+        if self.continuous is not None:
+            self._check_feature_names_exist(self.continuous, "continuous")
+        if self.categorical is not None:
+            self._check_feature_names_exist(self.categorical, "categorical")
+        if self.immutable is not None:
+            self._check_feature_names_exist(self.immutable, "immutable")
+        if self.feasible_values is not None:
+            self._check_range_dict_validity(self.feasible_values)
 
 
 
