@@ -76,4 +76,3 @@ class SklearnModel(BaseModel):
             return self.model.predict_proba(X)
         else:
             raise NotImplementedError("This model does not support probability predictions.")
-

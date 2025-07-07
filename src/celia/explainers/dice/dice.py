@@ -77,10 +77,11 @@ class DiceRegressorExplainer(RegressorExplainer):
                                   *args, **kwargs) -> pd.DataFrame:
 
         features_to_vary = [col for col in self.data.column_names if col not in self.data.immutable_column_names] if self.data.immutable_column_names else "all"
-
+        total_CFs = kwargs.pop("total_CFs", 1)  # Default to 1 counterfactual if not specified
         results = self.explainer.generate_counterfactuals(
             query_instances=sample,
             desired_range=target_range,
+            total_CFs=total_CFs,
             features_to_vary=features_to_vary,
             permitted_range = self.data.feasible_values or None,
             *args, **kwargs

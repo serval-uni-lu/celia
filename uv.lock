@@ -1,6 +1,6 @@
 version = 1
 revision = 2
-requires-python = ">=3.12.10"
+requires-python = ">=3.12"
 
 [[package]]
 name = "anyio"
@@ -181,8 +181,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "certifai", git = "https://github.com/alanpar97/CERTIFAI.git" },
-    { name = "dice-ml", git = "https://github.com/alanpar97/DiCE.git" },
+    { name = "certifai", git = "https://github.com/alanpar97/CERTIFAI.git?rev=main" },
+    { name = "dice-ml", git = "https://github.com/alanpar97/DiCE.git?rev=main" },
     { name = "fastjsonschema", specifier = "==2.21.1" },
     { name = "jsonschema", specifier = "==4.23.0" },
     { name = "matplotlib", specifier = "==3.10.1" },
@@ -204,7 +204,7 @@ dev = [
 [[package]]
 name = "certifai"
 version = "0.1.0"
-source = { git = "https://github.com/alanpar97/CERTIFAI.git#38d46d5c7879bd21d7b59fb06d5b0a2474ebdec9" }
+source = { git = "https://github.com/alanpar97/CERTIFAI.git?rev=main#f3e7a5f90565882bae22d83721ed035d096f3adb" }
 dependencies = [
     { name = "numpy" },
     { name = "pandas" },
@@ -398,7 +398,7 @@ wheels = [
 [[package]]
 name = "dice-ml"
 version = "0.11"
-source = { git = "https://github.com/alanpar97/DiCE.git#e8e12807f1062a7966f1c45e72b3dc5a4d7ed137" }
+source = { git = "https://github.com/alanpar97/DiCE.git?rev=main#75bc19fe64731c1a4c0297c63d5aec3ec2abbfe6" }
 dependencies = [
     { name = "jsonschema" },
     { name = "numpy" },

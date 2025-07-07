@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Alan Paredes", email = "alan.paredes@uni.lu" }
 ]
-requires-python = ">=3.12.10"
+requires-python = ">=3.12"
 dependencies = [
     "certifai",
     "dice-ml",
@@ -35,5 +35,5 @@ dev = [
 
 
 [tool.uv.sources]
-certifai = { git = "https://github.com/alanpar97/CERTIFAI.git" }
-dice-ml = { git = "https://github.com/alanpar97/DiCE.git" }
+certifai = { git = "https://github.com/alanpar97/CERTIFAI.git", rev = "main" }
+dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
