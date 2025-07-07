@@ -66,7 +66,7 @@ class DiceRegressorExplainer(RegressorExplainer):
 
         d = dice_ml.Data(dataframe=data_with_targets,
                          continuous_features = data.continuous_column_names or None,
-                         permitted_range = data.feasible_values or None,
+                         permitted_range = self.data.feasible_values if self.data.feasible_values is not None else {},
                          outcome_name=data.target_name, **data_kwargs)
         m = dice_ml.Model(model=model, backend='sklearn', model_type="regressor", **model_kwargs)
 
@@ -80,10 +80,9 @@ class DiceRegressorExplainer(RegressorExplainer):
 
         results = self.explainer.generate_counterfactuals(
             query_instances=sample,
-            total_CFs=kwargs.get('total_CFs', 1),  # Default to 1 counterfactual
             desired_range=target_range,
             features_to_vary=features_to_vary,
-            permitted_range= self.data.feasible_values or None,
+            permitted_range = self.data.feasible_values or None,
             *args, **kwargs
         )
 

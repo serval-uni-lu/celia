@@ -159,7 +159,8 @@ class BaseData(ABC):
             If any of the internal consistency checks fail.
         """
         # Ensure continuous and categorical are disjoint
-        self._check_feature_overlap(self.continuous_column_names, self.categorical_column_names)
+        if self.continuous_column_names is not None and self.categorical_column_names is not None:
+            self._check_feature_overlap(self.continuous_column_names, self.categorical_column_names)
 
         # Ensure feasible_values is valid
         self._check_range_dict_validity(self.feasible_values)

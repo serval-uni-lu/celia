@@ -214,7 +214,8 @@ class PublicData(BaseData):
         """
         self._validate_inputs()
         self._check_data_label_alignment(data=self.data, targets=self.targets)
-        self._check_feature_overlap(self.continuous_column_names, self.categorical_column_names)
+        if self.continuous_column_names is not None and self.categorical_column_names is not None:
+            self._check_feature_overlap(self.continuous_column_names, self.categorical_column_names)
         if self.continuous_column_names is not None:
             self._check_feature_names_exist(self.continuous_column_names, "continuous")
         if self.categorical_column_names is not None:
