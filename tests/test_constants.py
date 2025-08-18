@@ -74,4 +74,6 @@ KIDNEY_FEASIBLE_VALUES = {'patient': (1,38),
                           'age': (10,69),
                           'sex': [0.0, 1.0],
                           'disease_type': [0.0, 1.0, 2.0, 3.0]}
+
+
 KIDNEY_IMMUTABLE_FEATURE = ['sex']
