@@ -1,9 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Union, Optional, List, Tuple, Any
+from typing import Union, List, Tuple, Any
 from celia.model import BaseModel
 from celia.data import BaseData, PublicData
 import pandas as pd
-import numpy as np
 
 class BaseExplainer(ABC):
     """
@@ -109,7 +108,7 @@ class BaseExplainer(ABC):
         TypeError
             If the sample is not a pandas DataFrame or Series.
         """
-        self.validate_sample_dtypes(sample, *args, **kwargs)
+        self.validate_sample_dtypes(sample)
         if isinstance(sample, (pd.DataFrame, pd.Series)):
             self._validate_sample_columns_presence(sample)
         self._validate_sample(sample, *args, **kwargs)
@@ -139,7 +138,8 @@ class BaseExplainer(ABC):
         """
         pass
 
-    def validate_sample_dtypes(self, sample: Union[pd.DataFrame, pd.Series], *args, **kwargs) -> None:
+    @staticmethod
+    def validate_sample_dtypes(sample: Union[pd.DataFrame, pd.Series]) -> None:
         """
         Validate the type of the input sample.
 
@@ -404,3 +404,62 @@ class RegressorExplainer(BaseExplainer):
             A DataFrame containing counterfactual instances corresponding to the input.
         """
 
+class ClassifierExplainer(BaseExplainer):
+    """
+    Base class for explainers that work with classification models.
+    Inherits from BaseExplainer and implements additional validation for classification-specific requirements.
+    """
+
+    def __init__(self, model: BaseModel, data: BaseData, *args, **kwargs):
+        super().__init__(model, data, *args, **kwargs)
+
+    def generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
+                                 *args, **kwargs) -> pd.DataFrame:
+        """
+        Generate counterfactual explanations for the given input sample.
+
+        This is the public interface for counterfactual generation in classification explainers.
+        It performs input validation and delegates the actual generation logic
+        to the subclass-specific `_generate_counterfactuals` method.
+
+        Parameters
+        ----------
+        sample : Union[pd.DataFrame, pd.Series]
+            A single instance or multiple instances for which counterfactual explanations are to be generated.
+        *args : Any
+            Additional positional arguments passed to the explainer's generation method.
+        **kwargs : Any
+            Additional keyword arguments passed to the explainer's generation method.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing counterfactual instances corresponding to the input.
+        """
+
+        super().validate_sample(sample)
+        return self._generate_counterfactuals(sample, *args, **kwargs)
+
+    def _validate_sample(self, sample: Union[pd.DataFrame, pd.Series], *args, **kwargs) -> None:
+        pass
+
+    @abstractmethod
+    def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
+                                  *args, **kwargs) -> pd.DataFrame:
+        """
+        Abstract method to be implemented by subclasses to generate counterfactuals.
+
+        Assumes that `sample` has already been validated by the public method.
+        Subclasses must implement this method to define their specific counterfactual generation logic.
+
+        Parameters
+        ----------
+        sample : Union[pd.DataFrame, pd.Series]
+            A validated single instance to generate counterfactuals for.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame containing counterfactual instances corresponding to the input.
+        """
+        pass

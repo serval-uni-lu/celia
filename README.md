@@ -14,7 +14,7 @@ small changes to input features can lead to different predictions from a model.
 | CERTIFAI|  Sharma et al., 2019  | Heuristic |
 
 ## Installation
-This package is currently only available via GitHub. To install it, make sure you have **Python 3.10** or later installed.
+This package is currently only available via GitHub. To install it, make sure you have **Python 3.12** or later installed.
 You can install it with either ``uv`` or ``pip``.
 ### Option A. Using `uv`
 #### Quick Install from Github

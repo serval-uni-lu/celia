@@ -1,7 +1,7 @@
 [project]
 name = "celia"
 version = "0.1.0"
-description = "Add your description here"
+description = "CELIA is a Python library designed to generate counterfactual explanations for Machine Learning models trained on tabular data."
 readme = "README.md"
 authors = [
     { name = "Alan Paredes", email = "alan.paredes@uni.lu" }
