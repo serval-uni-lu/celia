@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import pairwise_distances
 from typing import List, Union, Tuple
+
+from celia.counterfactuals import Counterfactual
 from celia.explainers import RegressorExplainer
 from celia.model import BaseModel
 from celia.data import PublicData
@@ -26,7 +28,7 @@ class NearestNeighborCE:
                                  instance: pd.Series,
                                  desired_output: Union[int, float, List[float]],
                                  n_counterfactuals: int = 1,
-                                 mutable_features: List[str] = None):
+                                 mutable_features: List[str] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
         if isinstance(instance, pd.DataFrame):
             # Convert single-row DataFrame to Series
@@ -78,13 +80,14 @@ class NearestNeighborCE:
         distances = pairwise_distances(instance_mutable, candidates_mutable)[0]
 
         nearest_indices = np.argsort(distances)[:n_counterfactuals]
-        counterfactuals = valid_candidates.iloc[nearest_indices].copy()
+        counterfactuals: pd.DataFrame = valid_candidates.iloc[nearest_indices].copy()
 
         # Add a column with the model's prediction for each counterfactual
         counterfactual_preds = self.model.predict(counterfactuals)
         counterfactuals[self.target_name] = counterfactual_preds
+        instance_df[self.target_name] = current_pred
 
-        return counterfactuals.reset_index(drop=True)
+        return instance_df, counterfactuals.reset_index(drop=True)
 
 class NNCERegressorExplainer(RegressorExplainer):
     """
@@ -142,7 +145,7 @@ class NNCERegressorExplainer(RegressorExplainer):
 
     def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
                                   target_range: Union[List[float], Tuple[float, float]],
-                                 *args, **kwargs) -> pd.DataFrame:
+                                 *args, **kwargs) -> Counterfactual:
 
         # Check if user provided n_counterfactuals in kwargs, else default to 1
         n_counterfactuals = kwargs.pop("n_counterfactuals", 1)
@@ -153,10 +156,13 @@ class NNCERegressorExplainer(RegressorExplainer):
         else:
             mutable = [col for col in self.data.column_names if col not in self.data.immutable_column_names]
 
-        return self.explainer.nnce_generate_counterfactuals(instance=sample,
+        instance_df, results = self.explainer.nnce_generate_counterfactuals(instance=sample,
                                                      desired_output=target_range,
                                                      n_counterfactuals=n_counterfactuals,
                                                      mutable_features=mutable)
+
+        counterfactual = Counterfactual(original_instance=instance_df, counterfactual_instance=results)
+        return counterfactual
 
     def _validate_sample(self, sample: Union[pd.DataFrame, pd.Series],
                          target_range: Union[List[float], Tuple[float, float]] = None, *args, **kwargs) -> None:

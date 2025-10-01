@@ -1,6 +1,8 @@
 from typing import Union, List, Tuple
 import numpy as np
 import pandas as pd
+
+from celia.counterfactuals import Counterfactual
 from celia.explainers import RegressorExplainer
 from celia.data import PublicData
 from certifai import CERTIFAI
@@ -63,7 +65,7 @@ class CertifaiRegressorExplainer(RegressorExplainer):
 
     def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
                                   target_range: Union[List[float], Tuple[float, float]],
-                                  *args, **kwargs) -> pd.DataFrame:
+                                  *args, **kwargs) -> List[Counterfactual] | Counterfactual:
 
         # Check if user provided any additional parameters
         generations = kwargs.get('generations', 3)
@@ -83,6 +85,7 @@ class CertifaiRegressorExplainer(RegressorExplainer):
             final_k=final_k,
             classification=False,
             trained_with_columns=trained_with_columns,
+            target_name=self.data.target_name,
             target_lower=np.atleast_1d(target_range[0]),
             target_upper=np.atleast_1d(target_range[1]),
             model_type=model_type,
@@ -91,10 +94,20 @@ class CertifaiRegressorExplainer(RegressorExplainer):
             verbose=verbose
         )
 
-        if len(self.explainer.results[0][1]) == 0:
+        if not self.explainer.results:
             raise ValueError("No counterfactuals generated. Check the input parameters and data.")
-        counterfactuals_list = self.explainer.results[0][1]
+        else:
+            results = self.explainer.results
+
         columns = list(self.data.column_names) + [self.data.target_name]
-        counterfactuals_df = pd.DataFrame(counterfactuals_list, columns=columns)
-        return counterfactuals_df
+        counterfactuals = []
+        for res in results:
+            original_instance = res[0]
+            counterfactual_array = res[1]
+            counterfactual_df = pd.DataFrame(counterfactual_array, columns=columns)
+            counterfactual = Counterfactual(original_instance=original_instance,
+                                            counterfactual_instance=counterfactual_df)
+            counterfactuals.append(counterfactual)
+
+        return counterfactuals[0] if len(counterfactuals) == 1 else counterfactuals
 

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
-from celia.errors.user_configuration_erros import CELIAConfigurationError
+from celia._errors import ConfigurationError
 
 
 class BaseData(ABC):
@@ -103,27 +103,53 @@ class BaseData(ABC):
         """
         for feat, val in ranges.items():
             if feat not in self.data.columns:
-                raise ValueError(f"Feature '{feat}' in feasible_values is not in data.")
+                raise ConfigurationError(
+                    message=f"Feature '{feat}' in feasible_values is not in data.",
+                    param=feat,
+                    config={feat: val},
+                    hint="Ensure all keys in feasible_values match feature names in the dataset."
+                )
 
             if isinstance(val, tuple): # Continuous feature range
                 if len(val) != 2 or not all(isinstance(v, (int, float)) for v in val):
-                    raise ValueError(f"Invalid range tuple for feature '{feat}': {val}")
+                    raise ConfigurationError(
+                        message=f"Invalid range tuple for feature '{feat}': {val}",
+                        param=feat,
+                        config={feat: val},
+                        hint="Ranges must be tuples of two numeric values, e.g., (min, max)."
+                    )
                 if val[0] >= val[1]:
-                    raise ValueError(
-                        f"Invalid range for feature '{feat}': min must be less than max, got {val}"
+                    raise ConfigurationError(
+                        message=f"Invalid range for feature '{feat}': min must be less than max, got {val}",
+                        param=feat,
+                        config={feat: val},
+                        hint="Provide a tuple where the first element is strictly less than the second."
                     )
 
             elif isinstance(val, list): # Categorical feature values
+                if not val:
+                    raise ConfigurationError(
+                        message=f"Categorical feature '{feat}' has an empty feasible_values list.",
+                        param=feat,
+                        config={feat: val},
+                        hint="Provide at least one valid category."
+                    )
+
                 first_type = type(val[0])
                 if not all(isinstance(v, first_type) for v in val):
-                    raise CELIAConfigurationError(
-                        f"All feasible values for categorical feature '{feat}' "
-                        f"must share the same type; got types {[type(v).__name__ for v in val]}"
+                    raise ConfigurationError(
+                        message=f"All feasible values for categorical feature '{feat}' must share the same type.",
+                        param=feat,
+                        config={feat: val},
+                        hint=f"Ensure all values are of type {first_type.__name__}."
                     )
 
             else:
-                raise TypeError(
-                    f"Unsupported feasible value type for '{feat}': {type(val)}"
+                raise ConfigurationError(
+                    message=f"Unsupported feasible value type for '{feat}': {type(val).__name__}",
+                    param=feat,
+                    config={feat: val},
+                    hint="Use tuple for continuous ranges or list for categorical values."
                 )
 
     def _check_feature_overlap(self, continuous: List[str], categorical: List[str]) -> None:
@@ -145,22 +171,46 @@ class BaseData(ABC):
         """
         overlap = set(continuous).intersection(categorical)
         if overlap:
-            raise CELIAConfigurationError(
-                f"The following features are defined as both continuous and categorical: {overlap}"
+            raise ConfigurationError(
+                message=(
+                    "Some features are defined as both continuous and categorical, "
+                    f"which is not allowed: {sorted(overlap)}"
+                ),
+                param="feature_overlap",
+                config={
+                    "continuous": continuous,
+                    "categorical": categorical,
+                    "overlap": list(overlap),
+                },
+                hint="Remove overlapping features so that each feature is either continuous or categorical, not both."
             )
 
     def validate_data(self) -> None:
         """
         Run a series of validation checks to ensure the integrity of the data interface.
+        1. Ensures continuous and categorical features are disjoint.
+        2. Ensures the target variable is not listed as a continuous feature.
+        3. Validates the structure of the feasible_values dictionary.
 
         Raises
         ------
         CELIAConfigurationError
             If any of the internal consistency checks fail.
         """
-        # Ensure continuous and categorical are disjoint
+
         if self.continuous_column_names is not None and self.categorical_column_names is not None:
             self._check_feature_overlap(self.continuous_column_names, self.categorical_column_names)
 
-        # Ensure feasible_values is valid
+        for feature_list, param_name in [
+            (self.continuous_column_names, "continuous_column_names"),
+            (self.categorical_column_names, "categorical_column_names"),
+        ]:
+            if self.target_name in (feature_list or []):
+                raise ConfigurationError(
+                    message=f"Target column '{self.target_name}' cannot be listed as a feature in {param_name}.",
+                    param=param_name,
+                    config={"target": self.target_name, param_name: feature_list},
+                    hint="Remove the target column from the feature list.",
+                )
+
         self._check_range_dict_validity(self.feasible_values)

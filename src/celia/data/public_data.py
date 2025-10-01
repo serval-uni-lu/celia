@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import List, Dict, Any, Tuple, Optional, Set, Union
 from celia.data._base import BaseData
+from celia._errors import ConfigurationError
 
 
 class PublicData(BaseData):
@@ -15,7 +16,7 @@ class PublicData(BaseData):
     data : pd.DataFrame
         The feature matrix used to train the model, with shape (n_samples, n_features).
 
-    targets : pd.Series
+    targets :  pd.Series | List[str] | Tuple[str]
         The target labels corresponding to the training data, with shape (n_samples,).
 
     target_name : str
@@ -41,7 +42,7 @@ class PublicData(BaseData):
 
     Raises
     ------
-    ValueError
+    ConfigurationError
         If any consistency check fails (e.g., overlapping feature types, missing values, invalid ranges).
 
     Attributes
@@ -90,10 +91,7 @@ class PublicData(BaseData):
         self._categorical_column_names = categorical_column_names
         self._immutable_column_names = immutable_column_names
         self._feasible_values = feasible_values
-        
-        #NOTE: Convert the data to a pandas dataframe with polars too 
-        
-        
+
         self.validate_data()
 
     @property
@@ -161,7 +159,13 @@ class PublicData(BaseData):
 
         missing = set(feature_list) - set(self.data.columns)
         if missing:
-            raise ValueError(f"The following {name} features are not in the dataset: {missing}")
+            raise ConfigurationError(
+                message=f"The following {name} features are not in the dataset: {sorted(missing)}",
+                param=name,
+                config={"expected_columns": list(self.data.columns),
+                        "missing_features": list(missing)},
+                hint=f"Ensure all {name} features exist as columns in the provided dataset."
+            )
 
     @staticmethod
     def _check_data_label_alignment(data: pd.DataFrame, targets: pd.Series) -> None:
@@ -173,34 +177,80 @@ class PublicData(BaseData):
         data : pd.DataFrame
             The feature matrix used to train the model.
         targets : pd.Series
-            The target targets corresponding to the data.
+            The target values corresponding to the data.
 
         Raises
         ------
-        ValueError
+        ConfigurationError
             If the number of rows in data does not match the number of targets.
         """
         if len(data) != len(targets):
-            raise ValueError(
-                f"Data and targets must have the same number of instances: "
-                f"{len(data)} rows in data vs {len(targets)} targets."
+            raise ConfigurationError(
+                message=(
+                    "Data and targets must have the same number of instances: "
+                    f"{len(data)} rows in data vs {len(targets)} targets."
+                ),
+                param="targets",
+                config={"data_rows": len(data), "target_rows": len(targets)},
+                hint="Ensure that your target Series has exactly one value per row in the DataFrame."
             )
 
     def _validate_inputs(self):
         if not isinstance(self.data, pd.DataFrame):
-            raise TypeError(f"'data' must be a pandas DataFrame, got {type(self.data).__name__}")
+            raise ConfigurationError(
+                message=f"'data' must be a pandas DataFrame, got {type(self.data).__name__}",
+                param="data",
+                config={"provided_type": type(self.data).__name__},
+                hint="Ensure you pass a pandas DataFrame containing your features."
+            )
+
         if not isinstance(self.targets, pd.Series):
-            raise TypeError(f"'targets' must be a pandas Series, got {type(self.targets).__name__}")
+            raise ConfigurationError(
+                message=f"'targets' must be a pandas Series, got {type(self.targets).__name__}",
+                param="targets",
+                config={"provided_type": type(self.targets).__name__},
+                hint="Ensure you pass a pandas Series with the target values."
+            )
+
         if not isinstance(self.target_name, str):
-            raise TypeError(f"'target_name' must be a string, got {type(self.target_name).__name__}")
+            raise ConfigurationError(
+                message=f"'target_name' must be a string, got {type(self.target_name).__name__}",
+                param="target_name",
+                config={"provided_type": type(self.target_name).__name__},
+                hint="Provide the name of the target column as a string."
+            )
+
         if self.continuous_column_names is not None and not isinstance(self.continuous_column_names, list):
-            raise TypeError(f"'continuous_column_names' must be a list of strings or None, got {type(self.continuous_column_names).__name__}")
+            raise ConfigurationError(
+                message=f"'continuous_column_names' must be a list of strings or None, got {type(self.continuous_column_names).__name__}",
+                param="continuous_column_names",
+                config={"provided_type": type(self.continuous_column_names).__name__},
+                hint="Pass a list of continuous feature names, or None."
+            )
+
         if self.categorical_column_names is not None and not isinstance(self.categorical_column_names, list):
-            raise TypeError(f"'categorical_column_names' must be a list of strings or None, got {type(self.categorical_column_names).__name__}")
+            raise ConfigurationError(
+                message=f"'categorical_column_names' must be a list of strings or None, got {type(self.categorical_column_names).__name__}",
+                param="categorical_column_names",
+                config={"provided_type": type(self.categorical_column_names).__name__},
+                hint="Pass a list of categorical feature names, or None."
+            )
+
         if self.immutable_column_names is not None and not isinstance(self.immutable_column_names, list):
-            raise TypeError(f"'immutable_column_names' must be a list of strings or None, got {type(self.immutable_column_names).__name__}")
+            raise ConfigurationError(
+                message=f"'immutable_column_names' must be a list of strings or None, got {type(self.immutable_column_names).__name__}",
+                param="immutable_column_names",
+                config={"provided_type": type(self.immutable_column_names).__name__},
+                hint="Pass a list of immutable feature names, or None."
+            )
+
         if self.feasible_values is not None and not isinstance(self.feasible_values, dict):
-            raise TypeError(f"'feasible_values' must be a dictionary or None, got {type(self.feasible_values).__name__}")
+            raise ConfigurationError(
+                message=f"'feasible_values' must be a dictionary or None, got {type(self.feasible_values).__name__}",
+                param="feasible_values",
+                config={"provided_type": type(self.feasible_values).__name__},
+                hint="Provide feasible values as a dictionary mapping feature names to valid ranges or categories."
+            )
 
     def validate_data(self) -> None:
         """
@@ -211,6 +261,11 @@ class PublicData(BaseData):
         - The number of samples in data matches the number of targets.
         - Feasible values for features are valid.
         - No features are shared between continuous_column_names and categorical_column_names lists.
+
+        Raises
+        ------
+        ConfigurationError
+            If any validation check fails.
         """
         self._validate_inputs()
         self._check_data_label_alignment(data=self.data, targets=self.targets)
@@ -224,8 +279,3 @@ class PublicData(BaseData):
             self._check_feature_names_exist(self.immutable_column_names, "immutable")
         if self.feasible_values is not None:
             self._check_range_dict_validity(self.feasible_values)
-
-
-
-if __name__ == "__main__":
-    PublicData("hello",["label1"],target_name="target")

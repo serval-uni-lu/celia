@@ -57,7 +57,7 @@ Suppose you want to generate counterfactual explanations for a regression model 
 import joblib
 import pandas as pd
 from celia.model import SklearnModel
-from tests.test_constants import *
+from notebooks.test_constants import *
 ```
 
 First load your data and model:

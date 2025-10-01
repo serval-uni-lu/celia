@@ -2,8 +2,10 @@ from typing import Any, Union, List, Tuple
 import inspect
 import pandas as pd
 from celia.data import PublicData
+from celia._errors import ConfigurationError
 from celia.model import BaseModel
 from celia.explainers import RegressorExplainer
+from celia.counterfactuals import Counterfactual
 import dice_ml
 
 
@@ -43,14 +45,19 @@ class DiceRegressorExplainer(RegressorExplainer):
         data : PublicData
             The dataset used to generate counterfactual explanations.
 
-        explainer : DiceExplainer
+        explainer : dice_ml.Dice
             Instance of the NearestNeighborCE class initialized with training data, model,
             and target variable for regression tasks.
         """
     def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
         # Assert that data is an instance of PublicData
         if not isinstance(data, PublicData):
-            raise ValueError("data must be an instance of PublicData")
+            raise ConfigurationError(
+                message="DiceRegressorExplainer requires data to be an instance of PublicData.",
+                param="data",
+                hint="Please provide a PublicData object with appropriate metadata.",
+                config={"data_type": type(data).__name__}
+            )
         super().__init__(model, data, *args, **kwargs)
 
     def _create_explainer(self, model: BaseModel, data:PublicData, *args, **kwargs) -> Any:
@@ -74,7 +81,7 @@ class DiceRegressorExplainer(RegressorExplainer):
 
     def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
                                   target_range: Union[List[float], Tuple[float, float]],
-                                  *args, **kwargs) -> pd.DataFrame:
+                                  *args, **kwargs) -> List[Counterfactual]:
 
         features_to_vary = [col for col in self.data.column_names if col not in self.data.immutable_column_names] if self.data.immutable_column_names else "all"
         total_CFs = kwargs.pop("total_CFs", 1)  # Default to 1 counterfactual if not specified
@@ -87,14 +94,20 @@ class DiceRegressorExplainer(RegressorExplainer):
             *args, **kwargs
         )
 
-        if len(results.cf_examples_list) == 0:
+        if not results.cf_examples_list:
             raise ValueError("No counterfactuals generated. Check the input parameters and data.")
 
-        counterfactual_list = results.cf_examples_list[0].final_cfs_df
+        counterfactual_list = []
+        for counterfactuals in results.cf_examples_list:
+            ce = Counterfactual(original_instance=counterfactuals.test_instance_df,
+                                counterfactual_instance=counterfactuals.final_cfs_df)
+            counterfactual_list.append(ce)
+
+
         return counterfactual_list
 
-
-    def _filter_kwargs(self, constructor, all_kwargs: dict) -> dict:
+    @staticmethod
+    def _filter_kwargs(constructor, all_kwargs: dict) -> dict:
         """
         Filters the given dictionary of kwargs to include only those
         that are accepted by the specified constructor function.

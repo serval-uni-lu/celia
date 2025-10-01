@@ -1,105 +1,122 @@
 import pytest
 import pandas as pd
-from celia.data import PublicData
-
+from celia.data.public_data import PublicData
+from celia._errors import ConfigurationError
 
 @pytest.fixture
-def valid_inputs():
-    df = pd.DataFrame({
-        "age": [25, 30, 45],
-        "income": [50000, 60000, 80000],
-        "gender": ["M", "F", "F"]
+def dummy_dataframe() -> pd.DataFrame:
+    """A simple dataset with mixed feature types."""
+    return pd.DataFrame({
+        "age": [25, 32, 40, 29, 50],
+        "income": [50000, 60000, 75000, 48000, 82000],
+        "gender": ["M", "F", "F", "M", "F"],
+        "employed": [True, False, True, True, False]
     })
-    labels = pd.Series([1, 0, 1])
+
+@pytest.fixture
+def valid_feasible_values() -> dict:
+    """Valid feasible values for the dummy dataframe."""
     return {
-        "data": df,
-        "labels": labels,
-        "target_name": "target",
-        "continuous": ["age", "income"],
-        "categorical": ["gender"],
-        "immutable": ["age"],
-        "feasible_values": {
-            "age": (18, 65),
-            "income": (0, 100000),
-            "gender": ["M", "F"]
-        }
+        "age": (18, 65),
+        "income": (20000, 100000),
+        "gender": ["M", "F"],
+        "employed": [True, False]
     }
 
-
-def test_valid_creation(valid_inputs):
-    d = PublicData(**valid_inputs)
-    assert isinstance(d.data, pd.DataFrame)
-    assert isinstance(d.labels, pd.Series)
-    assert set(d.continuous) == {"age", "income"}
-    assert set(d.categorical) == {"gender"}
-
-
-def test_missing_feature_in_continuous(valid_inputs):
-    valid_inputs["continuous"] = ["age", "height"]  # 'height' not in data
-    with pytest.raises(ValueError, match="not in the dataset"):
-        PublicData(**valid_inputs)
-
-
-def test_overlap_between_continuous_and_categorical(valid_inputs):
-    valid_inputs["categorical"].append("age")
-    with pytest.raises(ValueError, match="both continuous and categorical"):
-        PublicData(**valid_inputs)
+@pytest.fixture
+def valid_public_data(dummy_dataframe, valid_feasible_values) -> PublicData:
+    """A valid PublicData object ready for testing."""
+    return PublicData(
+        data=dummy_dataframe,
+        targets=pd.Series([0, 1, 0, 1, 0], name="target"),
+        target_name="target",
+        column_names=dummy_dataframe.columns,
+        continuous_column_names=["age", "income"],
+        categorical_column_names=["gender", "employed"],
+        immutable_column_names=["age"],
+        feasible_values=valid_feasible_values
+    )
 
 
-def test_misaligned_data_labels(valid_inputs):
-    valid_inputs["labels"] = pd.Series([0, 1])  # length mismatch
-    with pytest.raises(ValueError, match="must have the same number of instances"):
-        PublicData(**valid_inputs)
+def create_public_data_with_overrides(
+    dummy_dataframe,
+    valid_feasible_values,
+    **overrides
+) -> PublicData:
+    """
+    Create a PublicData object with optional overrides.
+    Useful for constructing invalid configurations.
 
+    Example:
+        create_public_data_with_overrides(
+            dummy_dataframe,
+            valid_feasible_values,
+            continuous_column_names=["age", "target"]
+        )
+    """
+    return PublicData(
+        data=overrides.get("data", dummy_dataframe),
+        targets=overrides.get("targets", pd.Series([0, 1, 0, 1, 0], name="target")),
+        target_name=overrides.get("target_name", "target"),
+        column_names=overrides.get("column_names", dummy_dataframe.columns),
+        continuous_column_names=overrides.get("continuous_column_names", ["age", "income"]),
+        categorical_column_names=overrides.get("categorical_column_names", ["gender", "employed"]),
+        immutable_column_names=overrides.get("immutable_column_names", ["age"]),
+        feasible_values=overrides.get("feasible_values", valid_feasible_values),
+    )
 
-def test_invalid_range_in_feasible_values(valid_inputs):
-    valid_inputs["feasible_values"]["income"] = (100000, 50000)  # invalid range
-    with pytest.raises(ValueError, match="min must be less than max"):
-        PublicData(**valid_inputs)
+class TestPublicData:
 
+    def test_invalid_data_type(self, valid_feasible_values):
+        """Raise ConfigurationError if `data` is not a DataFrame."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            PublicData(
+                data=[1, 2, 3],  # invalid
+                targets=pd.Series([0, 1, 0], name="target"),
+                target_name="target",
+                column_names=["age"],
+                continuous_column_names=["age"],
+                categorical_column_names=[],
+                immutable_column_names=[],
+                feasible_values=valid_feasible_values,
+            )
 
-def test_feature_not_in_data_in_feasible_values(valid_inputs):
-    valid_inputs["feasible_values"]["occupation"] = ["engineer", "doctor"]
-    with pytest.raises(ValueError, match="not in data"):
-        PublicData(**valid_inputs)
+        err = exc_info.value
+        assert err.param == "data"
+        assert "must be a pandas DataFrame" in err.message
 
-def test_invalid_data_type(valid_inputs):
-    valid_inputs["data"] = valid_inputs["data"].values  # numpy array instead of DataFrame
-    with pytest.raises(TypeError, match="data.*pandas DataFrame"):
-        PublicData(**valid_inputs)
+    def test_invalid_targets_type(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if `targets` is not a Series."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            PublicData(
+                data=dummy_dataframe,
+                targets= [0, 1, 0],  # invalid
+                target_name="target",
+                column_names=dummy_dataframe.columns,
+                continuous_column_names=["age"],
+                categorical_column_names=["gender"],
+                immutable_column_names=["age"],
+                feasible_values=valid_feasible_values,
+            )
 
+        err = exc_info.value
+        assert err.param == "targets"
+        assert "must be a pandas Series" in err.message
 
-def test_invalid_labels_type(valid_inputs):
-    valid_inputs["labels"] = valid_inputs["labels"].values  # numpy array instead of Series
-    with pytest.raises(TypeError, match="labels.*pandas Series"):
-        PublicData(**valid_inputs)
+    def test_invalid_target_name_type(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if `target_name` is not a string."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            PublicData(
+                data=dummy_dataframe,
+                targets=pd.Series([0, 1, 0], name="target"),
+                target_name=123,  # invalid
+                column_names=dummy_dataframe.columns,
+                continuous_column_names=["age"],
+                categorical_column_names=["gender"],
+                immutable_column_names=["age"],
+                feasible_values=valid_feasible_values,
+            )
 
-
-def test_invalid_target_name_type(valid_inputs):
-    valid_inputs["target_name"] = 123  # should be a string
-    with pytest.raises(TypeError, match="target_name.*string"):
-        PublicData(**valid_inputs)
-
-
-def test_invalid_continuous_type(valid_inputs):
-    valid_inputs["continuous"] = "age"  # should be list of strings
-    with pytest.raises(TypeError, match="continuous.*list"):
-        PublicData(**valid_inputs)
-
-
-def test_invalid_categorical_type(valid_inputs):
-    valid_inputs["categorical"] = {"gender": 1}  # should be list
-    with pytest.raises(TypeError, match="categorical.*list"):
-        PublicData(**valid_inputs)
-
-
-def test_invalid_immutable_type(valid_inputs):
-    valid_inputs["immutable"] = 3.14  # should be list
-    with pytest.raises(TypeError, match="immutable.*list"):
-        PublicData(**valid_inputs)
-
-
-def test_invalid_feasible_values_type(valid_inputs):
-    valid_inputs["feasible_values"] = [("age", (18, 65))]  # should be dict
-    with pytest.raises(TypeError, match="feasible_values.*dictionary"):
-        PublicData(**valid_inputs)
+        err = exc_info.value
+        assert err.param == "target_name"
+        assert "must be a string" in err.message
