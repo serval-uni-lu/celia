@@ -1,7 +1,8 @@
-import pandas as pd
-from typing import List, Dict, Any, Tuple, Optional, Set, Union
+from typing import List, Dict, Any, Optional, Set, Union
 from celia.data._base import BaseData
 from celia._errors import ConfigurationError
+import numpy as np
+import pandas as pd
 
 
 class PublicData(BaseData):
@@ -16,10 +17,10 @@ class PublicData(BaseData):
     data : pd.DataFrame
         The feature matrix used to train the model, with shape (n_samples, n_features).
 
-    targets :  pd.Series | List[str] | Tuple[str]
+    targets :  pd.Series | np.ndarray
         The target labels corresponding to the training data, with shape (n_samples,).
 
-    target_name : str
+    target_name : Optional[str] = None
         The name of the target variable. It should be a single string representing the target column in `labels`.
 
     column_names : Optional[Union[List[str], Set[str]]]
@@ -74,9 +75,9 @@ class PublicData(BaseData):
 
     def __init__(
         self,
-        data: pd.DataFrame, # NOTE: To accept other data types later e.g dict
-        targets: pd.Series | List[str] | Tuple[str], # NOTE: Not a list?
-        target_name: str,
+        data: pd.DataFrame,
+        targets: Union[pd.Series, np.ndarray],
+        target_name: Optional[str] = None,
         column_names: Optional[Union[List[str], Set[str]]] = None,
         continuous_column_names: Optional[List[str]] = None,
         categorical_column_names: Optional[List[str]] = None,
@@ -204,15 +205,15 @@ class PublicData(BaseData):
                 hint="Ensure you pass a pandas DataFrame containing your features."
             )
 
-        if not isinstance(self.targets, pd.Series):
+        if not isinstance(self.targets, (pd.Series, np.ndarray)):
             raise ConfigurationError(
-                message=f"'targets' must be a pandas Series, got {type(self.targets).__name__}",
+                message=f"'targets' must be a pandas Series or numpy ndarray, got {type(self.targets).__name__}",
                 param="targets",
                 config={"provided_type": type(self.targets).__name__},
-                hint="Ensure you pass a pandas Series with the target values."
+                hint="Use a pandas Series or numpy ndarray for targets."
             )
 
-        if not isinstance(self.target_name, str):
+        if self.target_name is not None and not isinstance(self.target_name, str):
             raise ConfigurationError(
                 message=f"'target_name' must be a string, got {type(self.target_name).__name__}",
                 param="target_name",
@@ -268,6 +269,31 @@ class PublicData(BaseData):
             If any validation check fails.
         """
         self._validate_inputs()
+
+        if self.target_name is not None:
+            if isinstance(self.targets, pd.Series):
+                self._targets.name = self.target_name
+            else: # targets is ndarray, already checked in _validate_inputs
+                self._targets = pd.Series(self.targets, name=self.target_name)
+
+        else:
+            if isinstance(self.targets, pd.Series):
+                if self.targets.name is not None:
+                    self._target_name = self.targets.name
+                else:
+                    self._target_name = "target"
+                    self._targets.name = "target"
+
+            else: # targets is ndarray, already checked in _validate_inputs
+                raise ConfigurationError(
+                    message=(
+                        "When 'targets' is provided as a numpy array, you must also supply a 'target_name'."
+                    ),
+                    param="target_name",
+                    config={"targets_type": "ndarray"},
+                    hint="Pass a string to 'target_name' so CELIA can build a named Series from it.",
+                )
+            
         self._check_data_label_alignment(data=self.data, targets=self.targets)
         if self.continuous_column_names is not None and self.categorical_column_names is not None:
             self._check_feature_overlap(self.continuous_column_names, self.categorical_column_names)
