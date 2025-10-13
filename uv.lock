@@ -172,16 +172,20 @@ dependencies = [
     { name = "tqdm" },
 ]
 
-[package.dev-dependencies]
+[package.optional-dependencies]
 dev = [
     { name = "category-encoders" },
     { name = "pytest" },
     { name = "torch" },
     { name = "xgboost" },
 ]
+torch = [
+    { name = "torch" },
+]
 
 [package.metadata]
 requires-dist = [
+    { name = "category-encoders", marker = "extra == 'dev'", specifier = ">=2.7.0" },
     { name = "certifai", git = "https://github.com/alanpar97/CERTIFAI.git?rev=main" },
     { name = "dice-ml", git = "https://github.com/alanpar97/DiCE.git?rev=main" },
     { name = "fastjsonschema", specifier = "==2.21.1" },
@@ -189,19 +193,16 @@ requires-dist = [
     { name = "matplotlib", specifier = "==3.10.1" },
     { name = "notebook", specifier = ">=7.4.2" },
     { name = "pandas", specifier = "==2.2.3" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
     { name = "raiutils", specifier = "==0.4.2" },
     { name = "scikit-learn", specifier = "==1.3.2" },
     { name = "seaborn", specifier = ">=0.13.2" },
+    { name = "torch", marker = "extra == 'dev'", specifier = ">=2.8.0" },
+    { name = "torch", marker = "extra == 'torch'", specifier = ">=2.8.0" },
     { name = "tqdm", specifier = ">=4.67.1" },
+    { name = "xgboost", marker = "extra == 'dev'", specifier = ">=3.0.1" },
 ]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "category-encoders", specifier = ">=2.7.0" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "torch", specifier = ">=2.8.0" },
-    { name = "xgboost", specifier = ">=3.0.1" },
-]
+provides-extras = ["torch", "dev"]
 
 [[package]]
 name = "certifai"
