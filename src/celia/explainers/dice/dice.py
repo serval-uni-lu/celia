@@ -7,6 +7,7 @@ from celia.model import BaseModel
 from celia.explainers import RegressorExplainer
 from celia.counterfactuals import Counterfactual
 import dice_ml
+from dice_ml.diverse_counterfactuals import CounterfactualExamples as dice_CounterfactualExamples
 
 
 class DiceRegressorExplainer(RegressorExplainer):
@@ -84,7 +85,7 @@ class DiceRegressorExplainer(RegressorExplainer):
                                   *args, **kwargs) -> List[Counterfactual]:
 
         features_to_vary = [col for col in self.data.column_names if col not in self.data.immutable_column_names] if self.data.immutable_column_names else "all"
-        total_CFs = kwargs.pop("total_CFs", 1)  # Default to 1 counterfactual if not specified
+        total_CFs = kwargs.pop("total_CFs", 1)
         results = self.explainer.generate_counterfactuals(
             query_instances=sample,
             desired_range=target_range,
@@ -99,12 +100,28 @@ class DiceRegressorExplainer(RegressorExplainer):
 
         counterfactual_list = []
         for counterfactuals in results.cf_examples_list:
+            # DiCE rounds up the prediction to the nearest integer, we revert this to the original prediction
+            original_instance_prediction, cf_predictions = self._get_true_predictions(counterfactuals)
+            counterfactuals.test_instance_df[self.data.target_name] = original_instance_prediction
+            counterfactuals.final_cfs_df[self.data.target_name] = cf_predictions
+
             ce = Counterfactual(original_instance=counterfactuals.test_instance_df,
                                 counterfactual_instance=counterfactuals.final_cfs_df)
             counterfactual_list.append(ce)
 
 
         return counterfactual_list
+
+    def _get_true_predictions(self, counterfactuals: dice_CounterfactualExamples) -> Tuple[float, List[float]]:
+        """ Get the true model predictions for the original instance and counterfactuals. """
+        original_instance = counterfactuals.test_instance_df.drop(columns=[self.data.target_name], errors="ignore")
+        counterfactual_instances = counterfactuals.final_cfs_df.drop(columns=[self.data.target_name], errors="ignore")
+
+        original_pred = self.model.predict(original_instance)
+        cf_preds: List[float] = self.model.predict(counterfactual_instances)
+
+        return float(original_pred[0]), cf_preds
+
 
     @staticmethod
     def _filter_kwargs(constructor, all_kwargs: dict) -> dict:
