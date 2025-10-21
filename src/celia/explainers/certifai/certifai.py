@@ -5,6 +5,7 @@ import pandas as pd
 from celia.counterfactuals import Counterfactual
 from celia.explainers import RegressorExplainer
 from celia.data import PublicData
+from celia._errors import ConfigurationError, NoCounterfactualsFound
 from certifai import CERTIFAI
 
 from celia.model import BaseModel
@@ -16,6 +17,7 @@ class CertifaiRegressorExplainer(RegressorExplainer):
         This class wraps the CERTIFAI method to generate counterfactual explanations
         for regression tasks using public training data. It enforces the use of PublicData
         and validates that the input data meets the expected structure required by the explainer.
+        Note: CERTIFAI requires that category data is one-hot encoded.
 
     Parameters
     ----------
@@ -53,7 +55,12 @@ class CertifaiRegressorExplainer(RegressorExplainer):
     def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
         # Assert that data is an instance of PublicData
         if not isinstance(data, PublicData):
-            raise ValueError("data must be an instance of PublicData")
+            raise ConfigurationError(
+                message="CertifaiRegressorExplainer requires data to be an instance of PublicData.",
+                param="data",
+                hint="Please provide a PublicData object with appropriate metadata.",
+                config={"data_type": type(data).__name__}
+            )
         super().__init__(model, data, *args, **kwargs)
 
     def _create_explainer(self, model:BaseModel, data:PublicData, *args, **kwargs):
@@ -102,7 +109,7 @@ class CertifaiRegressorExplainer(RegressorExplainer):
         )
 
         if not self.explainer.results:
-            raise ValueError("No counterfactuals generated. Check the input parameters and data.")
+            raise NoCounterfactualsFound("No counterfactuals generated. Check the input parameters and data.")
         else:
             results = self.explainer.results
 
@@ -118,3 +125,14 @@ class CertifaiRegressorExplainer(RegressorExplainer):
 
         return counterfactuals[0] if len(counterfactuals) == 1 else counterfactuals
 
+    def _validate_sample(self, sample: Union[pd.DataFrame, pd.Series],
+                         target_range: Union[List[float], Tuple[float, float]] = None, *args, **kwargs) -> None:
+        """CERTIFAI specific sample validation. Checks if categories are one-hot encoded."""
+        # Check if any column is object or string
+        if any(sample.dtypes.isin(['object', 'string'])):
+            raise ConfigurationError(
+                message="CERTIFAI requires that categorical features are one-hot encoded.",
+                param="sample",
+                hint="Please ensure all categorical features are one-hot encoded before passing the sample.",
+                config={"sample_dtypes": sample.dtypes.astype(str).to_dict()}
+            )

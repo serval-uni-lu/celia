@@ -4,6 +4,7 @@ from celia.model import BaseModel
 from celia.data import BaseData, PublicData
 from celia.counterfactuals import Counterfactual
 import pandas as pd
+import numpy as np
 from celia._errors import ConfigurationError, InstancesAreWithinRange
 
 
@@ -124,7 +125,7 @@ class BaseExplainer(ABC):
 
         Raises
         ------
-        ValueError
+        ConfigurationError
             If the sample does not match the expected format or features.
         TypeError
             If the sample is not a pandas DataFrame or Series.
@@ -154,7 +155,7 @@ class BaseExplainer(ABC):
 
         Raises
         ------
-        ValueError
+        ConfigurationError
             If the sample violates subclass-specific requirements.
         """
         pass
@@ -197,7 +198,7 @@ class BaseExplainer(ABC):
 
         Raises
         ------
-        ValueError
+        ConfigurationError
             If the sample violates subclass-specific type requirements.
         """
         pass
@@ -213,14 +214,14 @@ class BaseExplainer(ABC):
 
         Raises
         ------
-        ValueError
+        ConfigurationError
             If the sample does not contain the columns defined in self.data.
         """
 
         if isinstance(self.data, PublicData):
             required_columns = self.data.column_names
         else:
-            raise ValueError(f"Data must be an instance of PublicData, got {type(self.data)}")
+            raise ConfigurationError(f"Data must be an instance of PublicData, got {type(self.data)}")
 
         if isinstance(sample, pd.Series):
             sample_columns = list(sample.index)
@@ -234,7 +235,7 @@ class BaseExplainer(ABC):
         # Duplicate check of sample columns
         if len(sample_lower) != len(set(sample_lower)):
             dupes = {c for c in sample_lower if sample_lower.count(c) > 1}
-            raise ValueError(f"Duplicate column names in sample: {sorted(dupes)}")
+            raise ConfigurationError(f"Duplicate column names in sample: {sorted(dupes)}")
 
         sample_columns_set = set(sample_lower)
         required_columns_set = set(required_lower)
@@ -246,7 +247,7 @@ class BaseExplainer(ABC):
                 msg.append(f"Missing columns: {sorted(missing)}")
             if extra:
                 msg.append(f"Unexpected columns: {sorted(extra)}")
-            raise ValueError("Sample column mismatch. " + " ".join(msg))
+            raise ConfigurationError("Sample column mismatch. " + " ".join(msg))
 
 class RegressorExplainer(BaseExplainer):
     """
@@ -302,15 +303,15 @@ class RegressorExplainer(BaseExplainer):
 
         Raises
         ------
-        ValueError
+        ConfigurationError
             If the target range is invalid (e.g., min >= max).
         """
         if target_range is None:
-            raise ValueError("target_range must be provided for regression counterfactual generation.")
+            raise ConfigurationError("target_range must be provided for regression counterfactual generation.")
         if not isinstance(target_range, (list, tuple)) or len(target_range) != 2:
-            raise ValueError("target_range must be a list or tuple of two elements [min, max].")
+            raise ConfigurationError("target_range must be a list or tuple of two elements [min, max].")
         if target_range[0] >= target_range[1]:
-            raise ValueError(f"Invalid target range: {target_range}. Min must be less than max.")
+            raise ConfigurationError(f"Invalid target range: {target_range}. Min must be less than max.")
 
     def _filter_samples_within_target_range(self, sample: Union[pd.DataFrame, pd.Series],
                                             target_range: Union[List[float], Tuple[float, float]]) -> pd.DataFrame:
@@ -340,7 +341,7 @@ class RegressorExplainer(BaseExplainer):
         if isinstance(sample, pd.Series):
             sample = sample.to_frame().T
 
-        preds = self.model.predict(sample)
+        preds = np.array(self.model.predict(sample))
         min_val, max_val = target_range
 
         out_of_range_mask = (preds < min_val) | (preds > max_val)

@@ -4,10 +4,8 @@ from sklearn.base import BaseEstimator
 import numpy as np
 
 from celia._utils.dependecies import requires_torch_class
-from celia._errors import ConfigurationError
 
 if TYPE_CHECKING:
-    import torch
     from torch import nn, Tensor
 
 class BaseModel(ABC, BaseEstimator):
@@ -93,16 +91,6 @@ class TorchModel(BaseModel):
     """
 
     def __init__(self, model: "nn.Module"):
-        try:
-            import torch
-        except ImportError as e:
-            raise ConfigurationError(
-                message="TorchModel requires 'torch', which is not currently installed.",
-                config={"model_wrapper": "TorchModel"},
-                param="torch",
-                hint="Install it using: `pip install celia[torch]`.",
-                source="TorchModel.__init__"
-            ) from e
         super().__init__(model)
 
     @property

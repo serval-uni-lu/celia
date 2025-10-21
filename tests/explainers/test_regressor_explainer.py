@@ -1,7 +1,7 @@
 import pytest
 from celia.explainers._base import RegressorExplainer
 import pandas as pd
-from celia._errors import InstancesAreWithinRange
+from celia._errors import InstancesAreWithinRange, ConfigurationError
 
 
 class DummyRegressorExplainer(RegressorExplainer):
@@ -25,9 +25,11 @@ class TestRegressorExplainer:
             [-5, 5],
         ],
     )
-    def test_validate_target_range_valid_inputs(self, target_range, trained_sklearn_model, valid_public_data):
+    def test_validate_target_range_valid_inputs(self, target_range,
+                                                model_trained_without_encoded_data,
+                                                celia_public_data_without_encoded_data):
         """Ensure _validate_target_range accepts valid range definitions."""
-        explainer = DummyRegressorExplainer(trained_sklearn_model, valid_public_data)
+        explainer = DummyRegressorExplainer(model_trained_without_encoded_data, celia_public_data_without_encoded_data)
         explainer._validate_target_range(target_range)
 
     @pytest.mark.parametrize(
@@ -40,57 +42,64 @@ class TestRegressorExplainer:
             ((5, 5), "Min must be less than max"),
         ],
     )
-    def test_validate_target_range_invalid_inputs(self, invalid_range, expected_msg, trained_sklearn_model, valid_public_data):
-        """Ensure _validate_target_range raises ValueError for invalid target ranges."""
+    def test_validate_target_range_invalid_inputs(self, invalid_range, expected_msg,
+                                                  model_trained_without_encoded_data,
+                                                  celia_public_data_without_encoded_data):
+        """Ensure _validate_target_range raises ConfigurationError for invalid target ranges."""
 
-        explainer = DummyRegressorExplainer(trained_sklearn_model, valid_public_data)
-        with pytest.raises(ValueError) as exc_info:
+        explainer = DummyRegressorExplainer(model_trained_without_encoded_data, celia_public_data_without_encoded_data)
+        with pytest.raises(ConfigurationError) as exc_info:
             explainer._validate_target_range(invalid_range)
         msg = str(exc_info.value)
         assert expected_msg.split()[0] in msg
 
-    def test_filter_samples_within_target_range_dataframe(self, trained_sklearn_model, valid_public_data, capsys):
-        """Ensure samples within the target range are excluded for DataFrame input."""
-        explainer = DummyRegressorExplainer(trained_sklearn_model, valid_public_data)
+    def test_filter_samples_within_target_range_dataframe(self, model_trained_without_encoded_data,
+                                                          celia_public_data_without_encoded_data,
+                                                          capsys):
+        """Ensure samples within the target range are excluded from DataFrame input."""
+        explainer = DummyRegressorExplainer(model_trained_without_encoded_data, celia_public_data_without_encoded_data)
 
-        # Input sample (predictions of sample are all 0.3)
-        sample = valid_public_data.data.iloc[:3]
+        # Input sample (All predictions of sample are 0.3)
+        sample = celia_public_data_without_encoded_data.data.iloc[:3]
         target_range = [0.2, 0.4]
 
-        filtered = explainer._filter_samples_within_target_range(sample, target_range)
+        #Should be empty
+        instances_outside_range = explainer._filter_samples_within_target_range(sample, target_range)
 
-        assert isinstance(filtered, pd.DataFrame)
-        assert all(col in filtered.columns for col in sample.columns)
-        assert len(filtered) <= len(sample)
+        assert isinstance(instances_outside_range, pd.DataFrame)
+        assert all(col in instances_outside_range.columns for col in sample.columns)
+        assert instances_outside_range.empty
 
 
         captured = capsys.readouterr()
         assert "Excluded" in captured.out
         assert "within target range" in captured.out
 
-    def test_filter_samples_within_target_range_series(self, trained_sklearn_model, valid_public_data, capsys):
+    def test_filter_samples_within_target_range_series(self, model_trained_without_encoded_data,
+                                                       celia_public_data_without_encoded_data,
+                                                       capsys):
         """Ensure Series input is converted to DataFrame internally and works correctly."""
-        explainer = DummyRegressorExplainer(trained_sklearn_model, valid_public_data)
+        explainer = DummyRegressorExplainer(model_trained_without_encoded_data, celia_public_data_without_encoded_data)
 
-        sample = valid_public_data.data.iloc[:3]  # Single instance (Series)
+        sample = celia_public_data_without_encoded_data.data.iloc[:3]  # Single instance (Series)
         target_range = [0.2, 0.4]
 
-        filtered = explainer._filter_samples_within_target_range(sample, target_range)
+        instance_outside_range = explainer._filter_samples_within_target_range(sample, target_range)
 
-        assert isinstance(filtered, pd.DataFrame)
-        assert list(filtered.columns) == list(valid_public_data.data.columns)
+        assert isinstance(instance_outside_range, pd.DataFrame)
+        assert list(instance_outside_range.columns) == list(celia_public_data_without_encoded_data.data.columns)
+        assert instance_outside_range.empty
         captured = capsys.readouterr()
         assert "Excluded" in captured.out
         assert "within target range" in captured.out
 
-    def test_generate_counterfactuals_raises_when_all_within_range(self, valid_public_data, trained_sklearn_model):
+    def test_generate_counterfactuals_raises_when_all_within_range(self, model_trained_without_encoded_data,
+                                                                   celia_public_data_without_encoded_data):
         """Ensure InstancesAreWithinRange is raised when all samples fall inside the target range."""
-        explainer = DummyRegressorExplainer(trained_sklearn_model, valid_public_data)
+        explainer = DummyRegressorExplainer(model_trained_without_encoded_data, celia_public_data_without_encoded_data)
 
-        sample = valid_public_data.data.iloc[0]  # Single instance (Series)
+        sample = celia_public_data_without_encoded_data.data.iloc[0]  # Single instance (Series)
         target_range = [0.2, 0.4]
-
-        filtered = explainer._filter_samples_within_target_range(sample, target_range)
 
         with pytest.raises(InstancesAreWithinRange) as exc_info:
             explainer.generate_counterfactuals(sample, target_range)

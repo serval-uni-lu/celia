@@ -2,7 +2,7 @@ from typing import Any, Union, List, Tuple
 import inspect
 import pandas as pd
 from celia.data import PublicData
-from celia._errors import ConfigurationError
+from celia._errors import ConfigurationError, NoCounterfactualsFound
 from celia.model import BaseModel
 from celia.explainers import RegressorExplainer
 from celia.counterfactuals import Counterfactual
@@ -96,7 +96,7 @@ class DiceRegressorExplainer(RegressorExplainer):
         )
 
         if not results.cf_examples_list:
-            raise ValueError("No counterfactuals generated. Check the input parameters and data.")
+            raise NoCounterfactualsFound("No counterfactuals generated. Check the input parameters and data.")
 
         counterfactual_list = []
         for counterfactuals in results.cf_examples_list:
