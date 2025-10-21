@@ -297,7 +297,7 @@ class TestBaseData:
         err = exc_info.value
         # Error should clearly indicate which parameter list is invalid
         assert err.param == param_name
-        assert f"Target column 'income'" in err.message
+        assert "Target column 'income'" in err.message
 
         # Config should contain the correct offending list
         assert param_name in err.config

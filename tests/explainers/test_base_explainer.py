@@ -5,7 +5,7 @@ from celia.data import PublicData, BaseData
 from celia.model import SklearnModel, BaseModel
 from celia.explainers import BaseExplainer
 from sklearn.dummy import DummyRegressor
-from celia._errors import MethodError, MethodValueError, ConfigurationError
+from celia._errors import ConfigurationError
 import numpy as np
 
 class ModelWithoutPredict:
@@ -116,7 +116,6 @@ def basic_explainer(compatible_model, valid_public_data) -> BasicExplainer:
         model=compatible_model,
         data=valid_public_data
     )
-
 
 class TestBaseExplainer:
 

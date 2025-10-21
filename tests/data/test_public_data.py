@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+import numpy as np
 from celia.data.public_data import PublicData
 from celia._errors import ConfigurationError
 
@@ -251,6 +252,29 @@ class TestPublicData:
         except Exception as e:
             pytest.fail(f"Unexpected exception raised for non-overlapping features: {e}")
 
+    def test_target_name_series_alignment(self, dummy_dataframe, valid_feasible_values):
+        series = pd.Series([0, 1, 0, 1, 0], name="frailty")
+        data = create_public_data_with_overrides(
+            dummy_dataframe, valid_feasible_values, targets=series, target_name="health_index"
+        )
+        assert data.targets.name == "health_index"
+        assert data.target_name == "health_index"
+
+    def test_target_name_ndarray_converted(self, dummy_dataframe, valid_feasible_values):
+        arr = np.array([0, 1, 0, 1, 0])
+        data = create_public_data_with_overrides(
+            dummy_dataframe, valid_feasible_values, targets=arr, target_name="frailty"
+        )
+        assert isinstance(data.targets, pd.Series)
+        assert data.targets.name == "frailty"
+
+    def test_target_name_ndarray_missing_name_raises(self, dummy_dataframe, valid_feasible_values):
+        arr = np.array([0, 1, 0, 1, 0])
+        with pytest.raises(ConfigurationError):
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values, targets=arr, target_name=None
+            )
+
     @pytest.mark.parametrize(
         "bad_feasible_values, expected_param, expected_message_part",
         [
@@ -300,7 +324,7 @@ class TestPublicData:
         [
             ("data", True),
             ("targets", True),
-            ("target_name", True),
+            ("target_name", False),
             ("column_names", False),
             ("continuous_column_names", False),
             ("categorical_column_names", False),

@@ -41,7 +41,7 @@ class ConfigurationError(CELIAError):
         self.config = config
         self.param = param
         self.hint = hint
-        source = source
+        self.source = source
 
 class MethodError(CELIAError):
     """
@@ -106,3 +106,14 @@ class MethodValueError(MethodError):
                  source: Optional[str] = None) -> None:
         super().__init__(message or "Data returned by Method is invalid", config, param, hint, source)
 
+class NoCounterfactualsFound(CELIAError):
+    """Raised when a method failed to find any counterfactuals for any instances."""
+    def __init__(self, message: str = "No counterfactuals found for any instances.") -> None:
+        super().__init__(message)
+        self.message = message
+
+class InstancesAreWithinRange(CELIAError):
+    """Raised when all provided instances are already within the desired target range. Only applicable for regression tasks."""
+    def __init__(self, message: str = "All provided instances are already within the desired target range.") -> None:
+        super().__init__(message)
+        self.message = message

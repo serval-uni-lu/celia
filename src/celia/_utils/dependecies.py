@@ -1,3 +1,5 @@
+from celia._errors import ConfigurationError
+
 def requires_torch_class(cls):
     """
     Class decorator to enforce that torch is installed before instantiating the class.
@@ -13,9 +15,14 @@ def requires_torch_class(cls):
         try:
             import torch  # noqa: F401
         except ImportError as e:
-            raise ImportError(
-                f"{cls.__name__} requires PyTorch. Install it with:\n\n"
-                "    pip install celia[torch]\n"
+            raise ConfigurationError(
+                message=(
+                    f"{cls.__name__} requires PyTorch, but it is not installed."
+                ),
+                config={"class": cls.__name__, "required_package": "torch"},
+                param="torch",
+                hint="Install it using: `pip install celia[torch]`.",
+                source=f"{cls.__name__}.__init__"
             ) from e
         original_init(self, *args, **kwargs)
 

@@ -4,7 +4,7 @@ from celia.model import BaseModel
 from celia.data import BaseData, PublicData
 from celia.counterfactuals import Counterfactual
 import pandas as pd
-from celia._errors import ConfigurationError
+from celia._errors import ConfigurationError, InstancesAreWithinRange
 
 
 class BaseExplainer(ABC):
@@ -248,49 +248,6 @@ class BaseExplainer(ABC):
                 msg.append(f"Unexpected columns: {sorted(extra)}")
             raise ValueError("Sample column mismatch. " + " ".join(msg))
 
-    '''
-    def _check_feasible_ranges(self, sample: Union[pd.DataFrame, pd.Series]) -> None:
-        """
-        Validates that all sample feature values are within the feasible values defined in self.data.
-
-        Parameters
-        ----------
-        sample : Union[pd.DataFrame, pd.Series]
-            One or more samples to validate.
-
-        Raises
-        ------
-        ValueError
-            If any feature value violates its feasibility constraints.
-        """
-        feasible = self.data.feasible_values
-
-        # Normalize to DataFrame
-        if isinstance(sample, pd.Series):
-            sample = sample.to_frame().T
-
-        for idx, row in sample.iterrows():
-            for feature, value in row.items():
-                if feature not in feasible:
-                    continue  # No constraint for this feature
-
-                constraint = feasible[str(feature)]
-
-                #Continuous constraints
-                if isinstance(constraint, tuple) and len(constraint) == 2:
-                    min_val, max_val = constraint
-                    if not (min_val <= value <= max_val):
-                        raise ValueError(
-                            f"Sample {idx}: Feature '{feature}' = {value} is out of range [{min_val}, {max_val}]"
-                        )
-                # Categorical constraints
-                else:
-                    if value not in constraint:
-                        raise ValueError(
-                            f"Sample {idx}: Feature '{feature}' = {value} is not in allowed set {constraint}"
-                        )
-        '''
-
 class RegressorExplainer(BaseExplainer):
     """
     Base class for explainers that work with regression models.
@@ -299,8 +256,6 @@ class RegressorExplainer(BaseExplainer):
 
     def __init__(self, model: BaseModel, data: BaseData, *args, **kwargs):
         super().__init__(model, data, *args, **kwargs)
-
-
 
     def generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
                                  target_range: Union[List[float], Tuple[float, float]] = None,
@@ -329,7 +284,7 @@ class RegressorExplainer(BaseExplainer):
         self._validate_target_range(target_range)
         filtered_samples = self._filter_samples_within_target_range(sample, target_range)
         if filtered_samples.empty:
-            raise ValueError("No samples outside the target range. Cannot generate counterfactuals.")
+            raise InstancesAreWithinRange()
         return self._generate_counterfactuals(sample=filtered_samples,
                                               target_range=target_range,
                                               *args,
@@ -379,7 +334,8 @@ class RegressorExplainer(BaseExplainer):
         -------
         pd.DataFrame
             A filtered DataFrame containing only those samples whose predictions fall
-            outside the target range.
+            outside the target range. The returned DataFrame may be empty if all samples
+            are within the target range.
         """
         if isinstance(sample, pd.Series):
             sample = sample.to_frame().T
@@ -390,7 +346,7 @@ class RegressorExplainer(BaseExplainer):
         out_of_range_mask = (preds < min_val) | (preds > max_val)
         filtered_sample = sample[out_of_range_mask]
 
-        if not filtered_sample.empty and filtered_sample.shape[0] < sample.shape[0]:
+        if filtered_sample.shape[0] < sample.shape[0]:
             excluded_indices = sample[~out_of_range_mask].index.tolist()
             print(
                 f"[Warning] Excluded {len(excluded_indices)} sample(s) already within target range: {excluded_indices}")
