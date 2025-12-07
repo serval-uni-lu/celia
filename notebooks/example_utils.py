@@ -1,11 +1,12 @@
+from typing import List, Optional, Tuple
+
 import pandas as pd
 from pandas import DataFrame, Series
 from sklearn.datasets import fetch_openml
 from sklearn.linear_model import BayesianRidge
+from sklearn.metrics import accuracy_score, classification_report, mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import mean_squared_error, accuracy_score, classification_report
-from typing import Tuple, List, Optional
 
 # Optional dependencies
 try:

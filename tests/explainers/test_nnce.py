@@ -2,7 +2,7 @@ import pytest
 from celia.explainers import NNCERegressorExplainer
 from celia.model import SklearnModel
 from celia.data import PublicData
-from celia._errors import ConfigurationError, NoCounterfactualsFound
+from celia._errors import ConfigurationError, NoCounterfactualsFoundError
 
 # TODO : Validate that NNCE receives exactly one instance at a time.
 
@@ -98,9 +98,8 @@ class TestNNCERegressorExplainer:
         sample = sample.drop(columns=['target'])
         target_range = [10.0, 20.0]
 
-        with pytest.raises(NoCounterfactualsFound) as exc_info:
+        with pytest.raises(NoCounterfactualsFoundError) as exc_info:
             explainer.generate_counterfactuals(sample, target_range=target_range)
             err = exc_info.value
             assert "No counterfactuals found for the given instance and target range." in err.message
-            assert err.param == "sample"
 

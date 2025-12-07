@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Any, NoReturn
+
 from celia._errors import ConfigurationError
 
 
@@ -8,196 +9,182 @@ class BaseData(ABC):
     Abstract base class for data handling in Celia.
     All data classes should inherit from this class and implement the required properties.
     """
+
     @property
     @abstractmethod
     def target_name(self) -> str:
         """
-        Return the name(s) of the target variable(s).
+        Return the name of the target variable.
 
         Returns
         -------
         str
             Target variable name.
         """
-        pass
 
     @property
     @abstractmethod
-    def continuous_column_names(self) -> List[str]:
+    def continuous_column_names(self) -> list[str]:
         """
         Return the names of continuous features.
 
         Returns
         -------
-        List[str]
+        list[str]
             List of continuous feature names.
         """
-        pass
 
     @property
     @abstractmethod
-    def categorical_column_names(self) -> List[str]:
+    def categorical_column_names(self) -> list[str]:
         """
         Return the names of categorical features.
 
         Returns
         -------
-        List[str]
+        list[str]
             List of categorical feature names.
         """
-        pass
 
     @property
     @abstractmethod
-    def immutable_column_names(self) -> List[str]:
+    def immutable_column_names(self) -> list[str]:
         """
-        Return the names of immutable features (those that cannot change in counterfactuals).
+        Return the names of immutable features.
 
         Returns
         -------
-        List[str]
+        list[str]
             List of immutable feature names.
         """
-        pass
 
     @property
     @abstractmethod
-    def feasible_values(self) -> Dict[str, Any]:
+    def feasible_values(self) -> dict[str, Any]:
         """
-        Return the feasible ranges or sets of values for each feature.
+        Return feasible ranges or allowed values for each feature.
 
         Returns
         -------
-        Dict[str, Any]
-            Dictionary mapping feature names to feasible values:
-            - Continuous features → tuple of (min, max)
-            - Categorical features → list of allowed categories
+        dict[str, Any]
+            - Continuous features → tuple(min, max)
+            - Categorical features → list of valid categories
         """
-        pass
 
     @abstractmethod
-    def _validate_inputs(self, *args, **kwargs):
+    def _validate_inputs(self, *args: object, **kwargs: object) -> NoReturn:
         """
-        Abstract method to validate inputs. This should be implemented in subclasses depending on
-        the extra arguments they receive.
+        Abstract method to validate arbitrary inputs.
         """
-        raise NotImplementedError("Subclasses must implement _validate_inputs method.")
+        message = "Subclasses must implement _validate_inputs method."
+        raise NotImplementedError(message)
 
-    def _check_range_dict_validity(self, ranges: Dict[str, Any]) -> None:
+    def _check_range_dict_validity(self, ranges: dict[str, Any]) -> None:
         """
-        Validate structure of the feasible_values dictionary.
+        Validate the structure of the feasible_values dictionary.
 
         Parameters
         ----------
-        ranges : Dict[str, Any]
-            Dictionary mapping feature names to feasible values.
-            - For continuous features, values must be tuples: (min, max)
-            - For categorical features, values must be lists of allowed values
+        ranges : dict[str, Any]
+            Mapping of feature name to feasible range or allowed categories.
 
         Raises
         ------
-        ValueError
-            If feature is not found in the data, or if values are not valid.
-        TypeError
-            If the type of feasible value is unsupported.
+        ConfigurationError
         """
         for feat, val in ranges.items():
             if feat not in self.data.columns:
+                message = f"Feature '{feat}' in feasible_values is not in data."
                 raise ConfigurationError(
-                    message=f"Feature '{feat}' in feasible_values is not in data.",
+                    message=message,
                     param=feat,
                     config={feat: val},
-                    hint="Ensure all keys in feasible_values match feature names in the dataset."
+                    hint="Ensure all keys in feasible_values match feature names in the dataset.",
                 )
 
-            if isinstance(val, tuple): # Continuous feature range
+            # Continuous ranges
+            if isinstance(val, tuple):
                 if len(val) != 2 or not all(isinstance(v, (int, float)) for v in val):
+                    message = f"Invalid range tuple for feature '{feat}': {val}"
                     raise ConfigurationError(
-                        message=f"Invalid range tuple for feature '{feat}': {val}",
+                        message=message,
                         param=feat,
                         config={feat: val},
-                        hint="Ranges must be tuples of two numeric values, e.g., (min, max)."
+                        hint="Ranges must be tuples of two numeric values, e.g., (min, max).",
                     )
                 if val[0] >= val[1]:
+                    message = f"Invalid range for feature '{feat}': min must be less than max, got {val}"
                     raise ConfigurationError(
-                        message=f"Invalid range for feature '{feat}': min must be less than max, got {val}",
+                        message=message,
                         param=feat,
                         config={feat: val},
-                        hint="Provide a tuple where the first element is strictly less than the second."
+                        hint="Provide a tuple where the first element is strictly less than the second.",
                     )
 
-            elif isinstance(val, list): # Categorical feature values
+            # Categorical values
+            elif isinstance(val, list):
                 if not val:
+                    message = f"Categorical feature '{feat}' has an empty feasible_values list."
                     raise ConfigurationError(
-                        message=f"Categorical feature '{feat}' has an empty feasible_values list.",
+                        message=message,
                         param=feat,
                         config={feat: val},
-                        hint="Provide at least one valid category."
+                        hint="Provide at least one valid category.",
                     )
 
                 first_type = type(val[0])
                 if not all(isinstance(v, first_type) for v in val):
+                    message = f"All feasible values for categorical feature '{feat}' must share the same type."
                     raise ConfigurationError(
-                        message=f"All feasible values for categorical feature '{feat}' must share the same type.",
+                        message=message,
                         param=feat,
                         config={feat: val},
-                        hint=f"Ensure all values are of type {first_type.__name__}."
+                        hint=f"Ensure all values are of type {first_type.__name__}.",
                     )
 
+            # Unsupported type
             else:
+                message = f"Unsupported feasible value type for '{feat}': {type(val).__name__}"
                 raise ConfigurationError(
-                    message=f"Unsupported feasible value type for '{feat}': {type(val).__name__}",
+                    message=message,
                     param=feat,
                     config={feat: val},
-                    hint="Use tuple for continuous ranges or list for categorical values."
+                    hint="Use tuple for continuous ranges or list for categorical values.",
                 )
 
-    def _check_feature_overlap(self, continuous: List[str], categorical: List[str]) -> None:
+    @staticmethod
+    def _check_feature_overlap(continuous: list[str], categorical: list[str]) -> None:
         """
-        Ensure that no features are shared between continuous and categorical lists.
-
-        Parameters
-        ----------
-        continuous : List[str]
-            List of continuous feature names.
-
-        categorical : List[str]
-            List of categorical feature names.
+        Ensure features are not simultaneously continuous and categorical.
 
         Raises
         ------
-        ValueError
-            If any feature is present in both lists.
+        ConfigurationError
         """
         overlap = set(continuous).intersection(categorical)
         if overlap:
+            message = (
+                f"Some features are defined as both continuous and categorical, which is not allowed: {sorted(overlap)}"
+            )
             raise ConfigurationError(
-                message=(
-                    "Some features are defined as both continuous and categorical, "
-                    f"which is not allowed: {sorted(overlap)}"
-                ),
+                message=message,
                 param="feature_overlap",
                 config={
                     "continuous": continuous,
                     "categorical": categorical,
                     "overlap": list(overlap),
                 },
-                hint="Remove overlapping features so that each feature is either continuous or categorical, not both."
+                hint=("Remove overlapping features so each feature is either continuous or categorical, but not both."),
             )
 
     def validate_data(self) -> None:
         """
-        Run a series of validation checks to ensure the integrity of the data interface.
-        1. Ensures continuous and categorical features are disjoint.
-        2. Ensures the target variable is not listed as a continuous feature.
-        3. Validates the structure of the feasible_values dictionary.
+        Run validation checks for data integrity.
 
         Raises
         ------
-        CELIAConfigurationError
-            If any of the internal consistency checks fail.
+        ConfigurationError
         """
-
         if self.continuous_column_names is not None and self.categorical_column_names is not None:
             self._check_feature_overlap(self.continuous_column_names, self.categorical_column_names)
 
@@ -206,8 +193,9 @@ class BaseData(ABC):
             (self.categorical_column_names, "categorical_column_names"),
         ]:
             if self.target_name in (feature_list or []):
+                message = f"Target column '{self.target_name}' cannot be listed as a feature in {param_name}."
                 raise ConfigurationError(
-                    message=f"Target column '{self.target_name}' cannot be listed as a feature in {param_name}.",
+                    message=message,
                     param=param_name,
                     config={"target": self.target_name, param_name: feature_list},
                     hint="Remove the target column from the feature list.",

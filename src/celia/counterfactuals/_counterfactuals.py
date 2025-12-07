@@ -1,35 +1,40 @@
 import pandas as pd
-from typing import Union
+
 from celia._errors import MethodError, MethodValueError
 
-__all__ = ["Counterfactual"]
 
 class Counterfactual:
-    """A class representing (a) counterfactual explanation(s) for a single instance.
+    """
+    A class representing counterfactual explanation(s) for a single instance.
 
     Parameters
     ----------
-    original_instance: Union[pd.Series, pd.DataFrame]
-        The original instance for which counterfactuals were generated. Must be a pandas Series or DataFrame.
-    counterfactual_instance: Union[pd.Series, pd.DataFrame]
-        The generated counterfactual instance(s). Must be a pandas Series or DataFrame.
+    original_instance : pd.Series | pd.DataFrame
+        The original instance for which counterfactuals were generated.
+    counterfactual_instance : pd.Series | pd.DataFrame
+        The generated counterfactual instance(s).
 
     Attributes
     ----------
-    original_instance: pd.DataFrame
+    original_instance : pd.DataFrame
         The original instance as a DataFrame.
-    counterfactuals: pd.DataFrame
+    counterfactuals : pd.DataFrame
         The generated counterfactual instance(s) as a DataFrame.
-    highlighted_counterfactuals: pd.DataFrame
-        A DataFrame showing only which columns have a new value in the counterfactual(s).
+    highlighted_counterfactuals : pd.DataFrame
+        A DataFrame indicating which values changed relative to the original instance.
     """
-    def __init__(self, original_instance: Union[pd.Series, pd.DataFrame],
-                 counterfactual_instance: Union[pd.Series, pd.DataFrame],):
 
-        self._original_instance, self._counterfactuals =\
-            self._validate_init(original_instance, counterfactual_instance)
+    def __init__(
+        self,
+        original_instance: pd.Series | pd.DataFrame,
+        counterfactual_instance: pd.Series | pd.DataFrame,
+    ) -> None:
+        (
+            self._original_instance,
+            self._counterfactuals,
+        ) = self._validate_init(original_instance, counterfactual_instance)
+
         self._highlighted_counterfactuals = self._create_highlighted_counterfactuals()
-
 
     @property
     def original_instance(self) -> pd.DataFrame:
@@ -44,118 +49,122 @@ class Counterfactual:
         return self._highlighted_counterfactuals
 
     def _create_highlighted_counterfactuals(self) -> pd.DataFrame:
-        """Creates a DataFrame of the counterfactual(s) showing only which columns have a new value.
+        """
+        Create a DataFrame marking changes from the original instance.
 
         Returns
         -------
         pd.DataFrame
-            A DataFrame with the same shape as the counterfactuals, where changed values
-            are shown and unchanged values are assigned '-' .
+            DataFrame where changed values are shown and unchanged values are set to '-'.
         """
+        highlighted = self.counterfactuals.copy()
 
-        highlighted: pd.DataFrame = self.counterfactuals.copy()
-
-        # Check if the value in each cell is the same as in the original instance
         for col in highlighted.columns:
-            highlighted[col] = highlighted[col].where(
-                highlighted[col] != self.original_instance.iloc[0][col], '-'
-            )
+            original_value = self.original_instance.iloc[0][col]
+            highlighted[col] = highlighted[col].where(highlighted[col] != original_value, "-")
 
         return highlighted
 
-    def _validate_init(self,original_instance: Union[pd.Series, pd.DataFrame],
-                        counterfactual_instance: Union[pd.Series, pd.DataFrame]) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """Validates the dtypes of the original and counterfactual instances, and checks if
-        the counterfactual is empty.
+    def _validate_init(
+        self,
+        original_instance: pd.Series | pd.DataFrame,
+        counterfactual_instance: pd.Series | pd.DataFrame,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Validate input types and ensure counterfactuals are non-empty.
 
         Returns
         -------
-        Tuple[pd.DataFrame, pd.DataFrame]
-            The original and counterfactual instances as DataFrames.
+        tuple[pd.DataFrame, pd.DataFrame]
+            Validated original and counterfactual instances as DataFrames.
 
         Raises
         ------
         MethodValueError
         """
         if not isinstance(original_instance, (pd.Series, pd.DataFrame)):
+            message = "Original Instance must be a pandas Series or DataFrame."
             raise MethodValueError(
-                message="Original Instance must be a pandas Series or DataFrame.",
-                config={"type": str(type(original_instance))},
+                message=message,
+                config={"type": type(original_instance).__name__},
                 param="original_instance",
                 hint="Ensure the original instance is a pandas Series or DataFrame.",
-                source="Counterfactual.__validate_init",
+                source="Counterfactual._validate_init",
             )
+
         if not isinstance(counterfactual_instance, (pd.Series, pd.DataFrame)):
+            message = "Counterfactual Instance must be a pandas Series or DataFrame."
             raise MethodValueError(
-                message="Counterfactual Instance must be a pandas Series or DataFrame.",
-                config={"type": str(type(counterfactual_instance))},
+                message=message,
+                config={"type": type(counterfactual_instance).__name__},
                 param="counterfactual_instance",
                 hint="Ensure the counterfactual instance is a pandas Series or DataFrame.",
-                source="Counterfactual.__validate_init",
+                source="Counterfactual._validate_init",
             )
+
         if counterfactual_instance.empty:
+            message = "Counterfactual Instance is empty."
             raise MethodValueError(
-                message="Counterfactual Instance is empty.",
+                message=message,
                 config={},
                 param="counterfactual_instance",
-                hint="Be sure to first drop any unsuccessful instances before creating a Counterfactual object.",
-                source="Counterfactual.__validate_init",
+                hint="Drop unsuccessful instances before creating a Counterfactual object.",
+                source="Counterfactual._validate_init",
             )
 
-        self._validate_counterfactuals(counterfactual_instance, original_instance)
+        # Validate matching columns
+        self._validate_counterfactuals(original_instance, counterfactual_instance)
 
+        # Convert Series to a 1-row DataFrame
         if isinstance(original_instance, pd.Series):
-            original_instance : pd.DataFrame = original_instance.to_frame().T
+            original_instance = original_instance.to_frame().T
 
         if isinstance(counterfactual_instance, pd.Series):
-            counterfactual_instance : pd.DataFrame = counterfactual_instance.to_frame().T
+            counterfactual_instance = counterfactual_instance.to_frame().T
 
         return original_instance, counterfactual_instance
 
     @staticmethod
-    def _validate_counterfactuals(original_instance: Union[pd.Series, pd.DataFrame],
-                                   counterfactual_instance: Union[pd.Series, pd.DataFrame]):
-        """Validates that the single or multiple counterfactuals have the necessary columns to create
-        a Counterfactual object.
+    def _validate_counterfactuals(
+        original_instance: pd.Series | pd.DataFrame,
+        counterfactual_instance: pd.Series | pd.DataFrame,
+    ) -> None:
+        """
+        Ensure counterfactuals have the same columns as the original instance.
 
         Raises
         ------
         MethodError
         """
         if isinstance(original_instance, pd.Series):
-            original_columns = original_instance.index.tolist()
+            original_columns = list(original_instance.index)
         else:
-            original_columns = original_instance.columns.tolist()
+            original_columns = list(original_instance.columns)
 
         if isinstance(counterfactual_instance, pd.Series):
-            counterfactual_columns = counterfactual_instance.index.tolist()
+            counter_columns = list(counterfactual_instance.index)
         else:
-            counterfactual_columns = counterfactual_instance.columns.tolist()
+            counter_columns = list(counterfactual_instance.columns)
 
-
-        if set(counterfactual_columns) != set(original_columns):
+        if set(counter_columns) != set(original_columns):
+            message = "Counterfactual instance must have the same columns as the original instance."
             raise MethodError(
-                message=(
-                    "Counterfactual instance must have the same columns as the original instance. "
-                ),
-                config={"expected": original_columns, "received": counterfactual_columns},
+                message=message,
+                config={"expected": original_columns, "received": counter_columns},
                 param="columns",
-                hint="Ensure the counterfactual generator preserves feature order and names.",
-                source="Counterfactual.__validate_counterfactuals",
+                hint="Ensure the counterfactual generator preserves feature names.",
+                source="Counterfactual._validate_counterfactuals",
             )
 
-        if len(counterfactual_columns) != len(original_columns):
+        if len(counter_columns) != len(original_columns):
+            message = "Counterfactual Instance must have the same number of columns as the original instance."
             raise MethodError(
-                message=(
-                    "Counterfactual Instance must have the same number of columns as the original instance. "
-                ),
-                config={"expected": len(original_columns), "received": len(counterfactual_columns)},
+                message=message,
+                config={
+                    "expected": len(original_columns),
+                    "received": len(counter_columns),
+                },
                 param="columns",
-                hint="Ensure the counterfactual generator preserves the number of features",
-                source="Counterfactual.__validate_counterfactuals",
+                hint="Ensure the counterfactual generator preserves the number of features.",
+                source="Counterfactual._validate_counterfactuals",
             )
-
-
-
-
-

@@ -2,7 +2,7 @@ import pytest
 from celia.data import PublicData
 from celia.explainers import CertifaiRegressorExplainer
 from celia.model import SklearnModel
-from celia._errors import ConfigurationError, NoCounterfactualsFound
+from celia._errors import ConfigurationError, NoCounterfactualsFoundError
 import pandas as pd
 
 #TODO: Add tests where counterfactuals are successfully generated.
@@ -70,7 +70,6 @@ class TestCertifaiRegressorExplainer:
                                            celia_public_data_without_encoded_data,
                                            dummy_regression_dataframe):
 
-        #TODO: Need to dive deeper into this test, as it is running CERTIFAI even when PublicData has no encoded data.
         """Test that CertifaiRegressorExplainer raises ConfigurationError when data is not encoded"""
         explainer = CertifaiRegressorExplainer(model=model_trained_without_encoded_data,
                                                  data=celia_public_data_without_encoded_data,
@@ -82,7 +81,7 @@ class TestCertifaiRegressorExplainer:
         with pytest.raises(ConfigurationError) as exc_info:
             explainer.generate_counterfactuals(sample, target_range=target_range)
             err = exc_info.value
-            assert "CertifaiRegressorExplainer requires encoded data for generating counterfactuals." in err.message
+            assert "CERTIFAI requires that categorical features are one-hot encoded." in err.message
             assert err.param == "sample"
 
     def test_certifai_no_counterfactuals_found(self, model_trained_with_encoded_data,
@@ -96,7 +95,7 @@ class TestCertifaiRegressorExplainer:
         sample = dummy_test_regression_dataframe_encoded
         sample = sample.drop(columns=['target'])
         target_range = [1000.0, 2000.0] # Reminder, fixture model is a DummyRegressor predicting median = 0.3
-        with pytest.raises(NoCounterfactualsFound) as exc_info:
+        with pytest.raises(NoCounterfactualsFoundError) as exc_info:
             explainer.generate_counterfactuals(sample, target_range=target_range)
             err = exc_info.value
             assert "No counterfactuals generated. Check the input parameters and data." in err.message

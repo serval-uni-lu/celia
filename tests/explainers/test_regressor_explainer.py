@@ -1,7 +1,7 @@
 import pytest
 from celia.explainers._base import RegressorExplainer
 import pandas as pd
-from celia._errors import InstancesAreWithinRange, ConfigurationError
+from celia._errors import InstancesAreWithinRangeError, ConfigurationError
 
 
 class DummyRegressorExplainer(RegressorExplainer):
@@ -95,13 +95,13 @@ class TestRegressorExplainer:
 
     def test_generate_counterfactuals_raises_when_all_within_range(self, model_trained_without_encoded_data,
                                                                    celia_public_data_without_encoded_data):
-        """Ensure InstancesAreWithinRange is raised when all samples fall inside the target range."""
+        """Ensure InstancesAreWithinRangeError is raised when all samples fall inside the target range."""
         explainer = DummyRegressorExplainer(model_trained_without_encoded_data, celia_public_data_without_encoded_data)
 
         sample = celia_public_data_without_encoded_data.data.iloc[0]  # Single instance (Series)
         target_range = [0.2, 0.4]
 
-        with pytest.raises(InstancesAreWithinRange) as exc_info:
+        with pytest.raises(InstancesAreWithinRangeError) as exc_info:
             explainer.generate_counterfactuals(sample, target_range)
 
         # Validate error message content
