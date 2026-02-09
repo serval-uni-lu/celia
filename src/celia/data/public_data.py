@@ -3,8 +3,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from celia._errors import ConfigurationError
 from celia.data._base import BaseData
+from celia.errors import ConfigurationError
 
 
 class PublicData(BaseData):
@@ -22,22 +22,22 @@ class PublicData(BaseData):
     targets :  pd.Series | np.ndarray
         The target labels corresponding to the training data, with shape (n_samples,).
 
-    target_name : Optional[str] = None
+    target_name : str | None = None
         The name of the target variable. It should be a single string representing the target column in `labels`.
 
-    column_names : Optional[Union[List[str], Set[str]]]
+    column_names : list[str] | set[str] | None = None
         A list or set of column names to be considered as features. If not provided, all columns in `data` are used.
 
-    continuous_column_names : List[str]
+    continuous_column_names : list[str] | None = None
         Names of features considered continuous (i.e., real-valued and bounded by a range).
 
-    categorical_column_names : List[str]
+    categorical_column_names : list[str] | None = None
         Names of features considered categorical (i.e., discrete values or classes).
 
-    immutable_column_names : List[str]
+    immutable_column_names : list[str] | None = None
         Names of features that are immutable (i.e., cannot be changed in counterfactuals).
 
-    feasible_values : Dict[str, Any]
+    feasible_values : dict[str, Any] | None = None
         Dictionary mapping each feature to its feasible values:
         - Continuous features: a tuple (min, max) or a List[int | float] of length 2
         - Categorical features: a list of allowed values
@@ -46,32 +46,6 @@ class PublicData(BaseData):
     ------
     ConfigurationError
         If any consistency check fails (e.g., overlapping feature types, missing values, invalid ranges).
-
-    Attributes
-    ----------
-    data : pd.DataFrame
-        Returns the stored feature matrix.
-
-    targets : pd.Series
-        Returns the stored target labels.
-
-    target_name : str
-        Returns the name of target variable.
-
-    column_names: Optional[Union[List[str], Set[str]]]
-        Returns the set of column names in the dataset. If not provided, it defaults to all columns in `data`.
-
-    continuous_column_names : List[str]
-        Returns the list of continuous feature names.
-
-    categorical_column_names : List[str]
-        Returns the list of categorical feature names.
-
-    immutable_column_names : List[str]
-        Returns the list of immutable feature names.
-
-    feasible_values : Dict[str, Any]
-        Returns the feasible values for all relevant features.
     """
 
     def __init__(
@@ -94,49 +68,46 @@ class PublicData(BaseData):
         self._immutable_column_names = immutable_column_names
         self._feasible_values = feasible_values
 
-        self.validate_data()
+        self._validate_data()
 
     @property
     def data(self) -> pd.DataFrame:
-        """Getter for the data"""
+        """The stored feature matrix."""
         return self._data
 
     @property
     def column_names(self) -> list[str]:
+        """the set of column names in the dataset. If not provided, it defaults to all columns in `data`."""
         return self._column_names
 
     @property
     def targets(self) -> pd.Series:
-        """Getter for target labels"""
+        """The stored target labels."""
         return self._targets
 
     @property
     def target_name(self) -> str:
-        """Getter for the target name"""
+        """The target label name"""
         return self._target_name
 
     @property
     def continuous_column_names(self) -> list[str] | None:
-        """Getter for the continuous_column_names variable
-
-        Returns:
-            List[str]: _description_
-        """
+        """The list of continuous feature names."""
         return self._continuous_column_names
 
     @property
     def categorical_column_names(self) -> list[str] | None:
-        """Getter for categorical_column_names variable"""
+        """The list of categorical feature names."""
         return self._categorical_column_names
 
     @property
     def immutable_column_names(self) -> list[str] | None:
-        """Getter for immutable_column_names variable"""
+        """The list of immutable feature names."""
         return self._immutable_column_names
 
     @property
     def feasible_values(self) -> dict[str, Any] | None:
-        """Getter for feasible values"""
+        """The feasible values for all relevant features."""
         return self._feasible_values
 
     def _check_feature_names_exist(self, feature_list: list[str], name: str) -> None:
@@ -263,7 +234,7 @@ class PublicData(BaseData):
                 hint="Provide feasible values as a dictionary mapping feature names to valid ranges or categories.",
             )
 
-    def validate_data(self) -> None:
+    def _validate_data(self) -> None:
         """
         Validate the dataset and its properties.
 

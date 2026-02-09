@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, NoReturn
 
-from celia._errors import ConfigurationError
+from celia.errors import ConfigurationError
 
 
 class BaseData(ABC):
@@ -177,7 +177,7 @@ class BaseData(ABC):
                 hint=("Remove overlapping features so each feature is either continuous or categorical, but not both."),
             )
 
-    def validate_data(self) -> None:
+    def _validate_data(self) -> None:
         """
         Run validation checks for data integrity.
 

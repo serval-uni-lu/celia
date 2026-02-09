@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from celia.data.public_data import PublicData
-from celia._errors import ConfigurationError
+from celia.errors import ConfigurationError
 
 @pytest.fixture
 def dummy_dataframe() -> pd.DataFrame:

@@ -4,7 +4,7 @@ import pandas as pd
 from celia.data import PublicData, BaseData
 from celia.model import SklearnModel, BaseModel
 from celia.explainers import BaseExplainer
-from celia._errors import ConfigurationError
+from celia.errors import ConfigurationError
 import numpy as np
 
 

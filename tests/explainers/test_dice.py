@@ -4,7 +4,7 @@ from celia.explainers import DiceRegressorExplainer
 from celia.model import SklearnModel
 from dice_ml.explainer_interfaces.dice_random import DiceRandom
 from dice_ml.explainer_interfaces.dice_genetic import DiceGenetic
-from celia._errors import ConfigurationError
+from celia.errors import ConfigurationError
 import re
 
 """Unit tests for the DiceRegressorExplainer class."""

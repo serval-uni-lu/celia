@@ -4,9 +4,10 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from celia._errors import ConfigurationError, InstancesAreWithinRangeError
 from celia.counterfactuals import Counterfactual
-from celia.data import BaseData, PublicData
+from celia.data import PublicData
+from celia.data._base import BaseData
+from celia.errors import ConfigurationError, InstancesAreWithinRangeError
 from celia.model import BaseModel
 
 

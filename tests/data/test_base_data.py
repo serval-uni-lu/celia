@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 from celia.data import BaseData
-from celia._errors import ConfigurationError
+from celia.errors import ConfigurationError
 
 
 class DummyData(BaseData):
@@ -89,7 +89,7 @@ class TestBaseData:
     def test_validate_data_passes_for_valid_data(self, valid_dummy_data):
         """Ensure validate_data passes without errors when configuration is valid."""
         try:
-            valid_dummy_data.validate_data()
+            valid_dummy_data._validate_data()
         except Exception as e:
             pytest.fail(f"validate_data raised an unexpected exception: {e}")
 
@@ -106,7 +106,7 @@ class TestBaseData:
         )
 
         with pytest.raises(ConfigurationError) as exc_info:
-            overlapping_data.validate_data()
+            overlapping_data._validate_data()
 
         err = exc_info.value
         assert "continuous" in str(err.config)
@@ -126,7 +126,7 @@ class TestBaseData:
         )
 
         try:
-            disjoint_data.validate_data()
+            disjoint_data._validate_data()
         except Exception as e:
             pytest.fail(f"validate_data raised an unexpected exception for disjoint features: {e}")
 
@@ -142,7 +142,7 @@ class TestBaseData:
         bad_data = create_dummy_data(simple_dataframe, bad_feasible_values)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            bad_data.validate_data()
+            bad_data._validate_data()
 
         err = exc_info.value
         assert err.param == "age"
@@ -150,7 +150,7 @@ class TestBaseData:
 
     def test_invalid_range_tuple_types(self, simple_dataframe):
         """Raise ConfigurationError if a continuous feature has a tuple with non-numeric values."""
-        from celia._errors import ConfigurationError
+        from celia.errors import ConfigurationError
 
         bad_feasible_values = {
             "age": (18, "sixty-five"),  # invalid type: string
@@ -161,7 +161,7 @@ class TestBaseData:
         bad_data = create_dummy_data(simple_dataframe, bad_feasible_values)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            bad_data.validate_data()
+            bad_data._validate_data()
 
         err = exc_info.value
         assert err.param == "age"
@@ -179,7 +179,7 @@ class TestBaseData:
         bad_data = create_dummy_data(simple_dataframe, bad_feasible_values)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            bad_data.validate_data()
+            bad_data._validate_data()
 
         err = exc_info.value
         assert err.param == "age"
@@ -196,7 +196,7 @@ class TestBaseData:
         bad_data = create_dummy_data(simple_dataframe, bad_feasible_values)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            bad_data.validate_data()
+            bad_data._validate_data()
 
         err = exc_info.value
         assert err.param == "gender"
@@ -213,7 +213,7 @@ class TestBaseData:
         bad_data = create_dummy_data(simple_dataframe, bad_feasible_values)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            bad_data.validate_data()
+            bad_data._validate_data()
 
         err = exc_info.value
         assert err.param == "gender"
@@ -230,7 +230,7 @@ class TestBaseData:
         good_data = create_dummy_data(simple_dataframe, good_feasible_values)
 
         try:
-            good_data.validate_data()
+            good_data._validate_data()
         except Exception as e:
             pytest.fail(f"validate_data raised an unexpected exception for valid boolean categorical list: {e}")
 
@@ -245,7 +245,7 @@ class TestBaseData:
         bad_data = create_dummy_data(simple_dataframe, bad_feasible_values)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            bad_data.validate_data()
+            bad_data._validate_data()
 
         err = exc_info.value
         assert err.param == "gender"
@@ -263,7 +263,7 @@ class TestBaseData:
         bad_data = create_dummy_data(simple_dataframe, bad_feasible_values)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            bad_data.validate_data()
+            bad_data._validate_data()
 
         err = exc_info.value
         assert err.param == "nonexistent"
@@ -292,7 +292,7 @@ class TestBaseData:
         )
 
         with pytest.raises(ConfigurationError) as exc_info:
-            bad_data.validate_data()
+            bad_data._validate_data()
 
         err = exc_info.value
         # Error should clearly indicate which parameter list is invalid

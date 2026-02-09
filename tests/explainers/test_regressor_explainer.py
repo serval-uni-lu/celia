@@ -1,7 +1,7 @@
 import pytest
 from celia.explainers._base import RegressorExplainer
 import pandas as pd
-from celia._errors import InstancesAreWithinRangeError, ConfigurationError
+from celia.errors import InstancesAreWithinRangeError, ConfigurationError
 
 
 class DummyRegressorExplainer(RegressorExplainer):

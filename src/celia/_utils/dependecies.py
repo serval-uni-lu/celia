@@ -1,6 +1,6 @@
 from typing import Any, TypeVar
 
-from celia._errors import ConfigurationError
+from celia.errors import ConfigurationError
 
 T = TypeVar("T", bound=type[Any])
 

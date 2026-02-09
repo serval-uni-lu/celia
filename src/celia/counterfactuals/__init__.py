@@ -1,3 +1,3 @@
-from ._counterfactuals import Counterfactual
+from .counterfactuals import Counterfactual
 
 __all__ = ["Counterfactual"]

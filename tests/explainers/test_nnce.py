@@ -2,7 +2,7 @@ import pytest
 from celia.explainers import NNCERegressorExplainer
 from celia.model import SklearnModel
 from celia.data import PublicData
-from celia._errors import ConfigurationError, NoCounterfactualsFoundError
+from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 
 # TODO : Validate that NNCE receives exactly one instance at a time.
 

@@ -1,7 +1,7 @@
 import sys
 import pytest
 from celia.model._base import TorchModel
-from celia._errors import ConfigurationError
+from celia.errors import ConfigurationError
 import torch
 import numpy as np
 import pandas as pd

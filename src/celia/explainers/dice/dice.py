@@ -7,9 +7,9 @@ from dice_ml.diverse_counterfactuals import (
     CounterfactualExamples as dice_CounterfactualExamples,
 )
 
-from celia._errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.counterfactuals import Counterfactual
 from celia.data import PublicData
+from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import RegressorExplainer
 from celia.model import BaseModel
 

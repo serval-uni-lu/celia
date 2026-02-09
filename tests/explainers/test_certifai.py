@@ -2,7 +2,7 @@ import pytest
 from celia.data import PublicData
 from celia.explainers import CertifaiRegressorExplainer
 from celia.model import SklearnModel
-from celia._errors import ConfigurationError, NoCounterfactualsFoundError
+from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 import pandas as pd
 
 #TODO: Add tests where counterfactuals are successfully generated.

@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import pairwise_distances
 
-from celia._errors import ConfigurationError, MethodValueError, NoCounterfactualsFoundError
 from celia.counterfactuals import Counterfactual
 from celia.data import PublicData
+from celia.errors import ConfigurationError, MethodValueError, NoCounterfactualsFoundError
 from celia.explainers import RegressorExplainer
 from celia.model import BaseModel
 

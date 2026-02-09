@@ -33,15 +33,8 @@ class BaseModel(ABC, BaseEstimator):
         self._model = model
 
     @property
-    def model(self):
-        """
-        Get the wrapped model instance.
-
-        Returns
-        -------
-        Any
-            The wrapped model instance.
-        """
+    def model(self) -> Any:
+        """The wrapped model instance."""
         return self._model
 
     @abstractmethod
@@ -106,14 +99,7 @@ class TorchModel(BaseModel):
 
     @property
     def raw_model(self) -> "nn.Module":
-        """
-        Return the underlying PyTorch model.
-        Used for methods that need access to gradients or model internals.
-
-        Returns
-        -------
-        torch.nn.Module
-        """
+        """The original PyTorch model."""
         return self._model
 
     def predict(self, x: pd.DataFrame | pd.Series | np.ndarray | "Tensor") -> np.ndarray:

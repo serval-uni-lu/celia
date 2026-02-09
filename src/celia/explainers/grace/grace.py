@@ -4,10 +4,11 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 import pandas as pd
 
-from celia._errors import ConfigurationError
 from celia._utils.dependecies import requires_torch_class
 from celia.counterfactuals import Counterfactual
-from celia.data import BaseData, PublicData
+from celia.data import PublicData
+from celia.data._base import BaseData
+from celia.errors import ConfigurationError
 from celia.explainers import ClassifierExplainer
 from celia.model import BaseModel, TorchModel
 

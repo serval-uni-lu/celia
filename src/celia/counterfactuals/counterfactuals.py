@@ -1,6 +1,6 @@
 import pandas as pd
 
-from celia._errors import MethodError, MethodValueError
+from celia.errors import MethodError, MethodValueError
 
 
 class Counterfactual:
@@ -13,15 +13,6 @@ class Counterfactual:
         The original instance for which counterfactuals were generated.
     counterfactual_instance : pd.Series | pd.DataFrame
         The generated counterfactual instance(s).
-
-    Attributes
-    ----------
-    original_instance : pd.DataFrame
-        The original instance as a DataFrame.
-    counterfactuals : pd.DataFrame
-        The generated counterfactual instance(s) as a DataFrame.
-    highlighted_counterfactuals : pd.DataFrame
-        A DataFrame indicating which values changed relative to the original instance.
     """
 
     def __init__(
@@ -38,24 +29,27 @@ class Counterfactual:
 
     @property
     def original_instance(self) -> pd.DataFrame:
+        """The original instance as a pandas DataFrame."""
         return self._original_instance
 
     @property
     def counterfactuals(self) -> pd.DataFrame:
+        """The generated counterfactual instance(s) as a pandas DataFrame."""
         return self._counterfactuals
 
     @property
     def highlighted_counterfactuals(self) -> pd.DataFrame:
+        """A pandas DataFrame indicating which values changed relative to the original instance."""
         return self._highlighted_counterfactuals
 
     def _create_highlighted_counterfactuals(self) -> pd.DataFrame:
         """
-        Create a DataFrame marking changes from the original instance.
+        Create a pandas DataFrame marking changes from the original instance.
 
         Returns
         -------
         pd.DataFrame
-            DataFrame where changed values are shown and unchanged values are set to '-'.
+            pandas DataFrame where changed values are shown and unchanged values are set to '-'.
         """
         highlighted = self.counterfactuals.copy()
 
