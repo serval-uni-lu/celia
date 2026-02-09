@@ -66,27 +66,39 @@ class TestTorchModel:
         assert isinstance(preds, np.ndarray)
         assert preds.shape == (3,)
 
-    def test_predict_invalid_input_raises_pytorch_error(self, torch_wrapper):
-        """Ensure invalid input (e.g., pandas.DataFrame) raises a PyTorch-originated error."""
-        X_invalid = pd.DataFrame(np.random.randn(3, 4))
+    def test_predict_accepts_dataframe_input(self, torch_wrapper):
+        """Ensure .predict works with pandas.DataFrame input."""
+        X_df = pd.DataFrame(np.random.randn(3, 4))
+        preds = torch_wrapper.predict(X_df)
+        assert isinstance(preds, np.ndarray)
+        assert preds.shape == (3,)
 
-        with pytest.raises((TypeError, RuntimeError)) as exc_info:
-            torch_wrapper.predict(X_invalid)
+    def test_predict_accepts_series_input(self, torch_wrapper):
+        """Ensure .predict works with pandas.Series input (single instance)."""
+        X_series = pd.Series(np.random.randn(4))
+        preds = torch_wrapper.predict(X_series)
+        assert isinstance(preds, np.ndarray)
+        assert preds.shape == (1,)
 
-        msg = str(exc_info.value).lower()
-        assert "tensor" in msg or "expected" in msg or "float" in msg
-
-    @pytest.mark.parametrize("input_type", ["tensor", "numpy"])
+    @pytest.mark.parametrize("input_type", ["tensor", "numpy", "dataframe", "series"])
     def test_predict_proba_returns_valid_probabilities(self, torch_wrapper, input_type):
         """Ensure .predict_proba returns valid probability distributions."""
         # Generate input in the requested format
-        X = torch.randn(5, 4) if input_type == "tensor" else np.random.randn(5, 4)
+        if input_type == "tensor":
+            X = torch.randn(5, 4)
+        elif input_type == "numpy":
+            X = np.random.randn(5, 4)
+        elif input_type == "dataframe":
+            X = pd.DataFrame(np.random.randn(5, 4))
+        else:
+            X = pd.Series(np.random.randn(4))
 
         probs = torch_wrapper.predict_proba(X)
+        expected_rows = 1 if input_type == "series" else 5
 
         assert isinstance(probs, np.ndarray)
-        assert probs.shape == (5, 2)
+        assert probs.shape == (expected_rows, 2)
 
         assert np.all(probs >= 0.0) and np.all(probs <= 1.0)
-        np.testing.assert_allclose(probs.sum(axis=1), np.ones(5), rtol=1e-5, atol=1e-6)
+        np.testing.assert_allclose(probs.sum(axis=1), np.ones(expected_rows), rtol=1e-5, atol=1e-6)
 

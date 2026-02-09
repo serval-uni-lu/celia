@@ -1,8 +1,10 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import pandas as pd
 from sklearn.base import BaseEstimator
 
 from celia._utils.dependecies import requires_torch_class
@@ -114,8 +116,13 @@ class TorchModel(BaseModel):
         """
         return self._model
 
-    def predict(self, x: np.ndarray | "Tensor") -> np.ndarray:
+    def predict(self, x: pd.DataFrame | pd.Series | np.ndarray | "Tensor") -> np.ndarray:
         import torch
+
+        if isinstance(x, pd.DataFrame):
+            x = x.to_numpy()
+        elif isinstance(x, pd.Series):
+            x = x.to_numpy().reshape(1, -1)
 
         self._model.eval()
         if isinstance(x, np.ndarray):
@@ -126,8 +133,13 @@ class TorchModel(BaseModel):
             predicted = torch.argmax(outputs, dim=1)
         return predicted.cpu().numpy()
 
-    def predict_proba(self, x: np.ndarray | "Tensor") -> np.ndarray:
+    def predict_proba(self, x: pd.DataFrame | pd.Series | np.ndarray | "Tensor") -> np.ndarray:
         import torch
+
+        if isinstance(x, pd.DataFrame):
+            x = x.to_numpy()
+        elif isinstance(x, pd.Series):
+            x = x.to_numpy().reshape(1, -1)
 
         self._model.eval()
         if isinstance(x, np.ndarray):

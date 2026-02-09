@@ -12,13 +12,12 @@ from celia.explainers import ClassifierExplainer
 from celia.model import BaseModel, TorchModel
 
 if TYPE_CHECKING:
-    import torch
     from torch import Tensor
 
 
 @requires_torch_class
 class GRACE:
-    def __init__(self, model: "torch.nn.Module") -> None:
+    def __init__(self, model: TorchModel) -> None:
         self.model = model
 
     @staticmethod
@@ -91,17 +90,17 @@ class GRACE:
 
         import torch
 
-        predictions = self.model.predict_proba(original_instance)
+        predictions = self.model.predict_proba(original_instance).flatten()
         sorted_class_indices: list[int] = predictions.argsort()[::-1]
 
-        original_class = self.model.predict(original_instance)
+        original_class = int(self.model.predict(original_instance).item())
 
         input_clone = copy.deepcopy(original_instance)
         cumulative_perturbation = np.zeros(num_features, dtype=np.float32)
         minimal_direction = np.zeros(num_features, dtype=np.float32)
 
-        perturbed_input  = input_clone.clone().detach().requires_grad_(True)
-        outputs = self.model(perturbed_input)
+        perturbed_input = input_clone.clone().detach().requires_grad_(True)
+        outputs = self.model.raw_model(perturbed_input)
 
         tolerance = 1e-8
         iteration_count = 0
@@ -128,8 +127,8 @@ class GRACE:
                             hint="Provide an object with a `select` method that returns a list of feature indices.",
                         )
 
-                    selector : Any = feature_selector
-                    selected_features = selector.select(sorted_features, num_features) # type: ignore[call-non-callable]
+                    selector: Any = feature_selector
+                    selected_features = selector.select(sorted_features, num_features)  # type: ignore[call-non-callable]
                 else:
                     selected_features = sorted_features[:num_features].tolist()
 
@@ -171,7 +170,7 @@ class GRACE:
 
             counterfactual_tensor = torch.from_numpy(counterfactual_array).float()
             perturbed_input = counterfactual_tensor.clone().detach().requires_grad_(True)
-            outputs = self.model(perturbed_input)
+            outputs = self.model.raw_model(perturbed_input)
 
             counterfactual_class = int(np.argmax(outputs.detach().numpy().flatten()))
             iteration_count += 1
@@ -183,7 +182,7 @@ class GRACE:
         final_cf_tensor = torch.from_numpy(final_cf_array).float()
         final_input = final_cf_tensor.clone().detach().requires_grad_(True)
 
-        outputs = self.model(final_input)
+        outputs = self.model.raw_model(final_input)
         counterfactual_class = int(np.argmax(outputs.detach().numpy().flatten()))
 
         return (
@@ -284,7 +283,7 @@ class GRACE:
         else:
             original_tensor = original_instance  # already Tensor
 
-        original_class = int(self.model.predict(original_tensor))
+        original_class = int(self.model.predict(original_tensor).item())
 
         for k in range(1, max_features_to_perturb + 1):
             (
@@ -359,7 +358,7 @@ class GRACEClassifierExplainer(ClassifierExplainer):
         *args: object,
         **kwargs: object,
     ) -> GRACE:
-        return GRACE(model.raw_model)
+        return GRACE(model)
 
     def _generate_counterfactuals(
         self,
