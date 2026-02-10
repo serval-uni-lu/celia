@@ -1,3 +1,3 @@
-from .dice import DiceRegressorExplainer
+from .dice import DiceClassifierExplainer, DiceRegressorExplainer
 
-__all__ = ["DiceRegressorExplainer"]
+__all__ = ["DiceClassifierExplainer", "DiceRegressorExplainer"]

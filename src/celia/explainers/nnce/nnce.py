@@ -5,7 +5,7 @@ from sklearn.metrics import pairwise_distances
 from celia.counterfactuals import Counterfactual
 from celia.data import PublicData
 from celia.errors import ConfigurationError, MethodValueError, NoCounterfactualsFoundError
-from celia.explainers import RegressorExplainer
+from celia.explainers import ClassifierExplainer, RegressorExplainer
 from celia.model import BaseModel
 
 
@@ -15,8 +15,8 @@ class NearestNeighborCE:
     Parameters
     ----------
     train_data : pd.DataFrame
-        The training data used to find nearest neighbors. Must contain the same
-        feature columns expected by `model.predict`. We assume train_data contains the column with the target variable.
+        The training data used to find nearest neighbors. Must contain only
+        feature columns expected by ``model.predict`` (no target column).
     model : BaseModel
         The predictive model used to compute outputs.
     target_name : str, optional
@@ -25,6 +25,10 @@ class NearestNeighborCE:
         Either "classification" or "regression", by default "classification".
     verbose : bool, optional
         Whether to print intermediate steps, by default False.
+    targets : pd.Series | np.ndarray | None, optional
+        The target values corresponding to ``train_data``. Required for
+        classification tasks to validate the desired output class against
+        known classes.
 
     Raises
     ------
@@ -39,6 +43,7 @@ class NearestNeighborCE:
         target_name: str = "prediction",
         task_type: str = "classification",
         verbose: bool = False,
+        targets: pd.Series | np.ndarray | None = None,
     ):
         self._validate_init_dtypes(train_data, target_name, task_type, verbose)
 
@@ -47,6 +52,7 @@ class NearestNeighborCE:
         self.target_name = target_name
         self.task_type = task_type
         self.verbose = verbose
+        self.targets = targets
 
     def nnce_generate_counterfactuals(
         self,
@@ -273,7 +279,7 @@ class NearestNeighborCE:
                 source="NearestNeighborCE.nnce_generate_counterfactuals",
             )
         if self.task_type == "classification":
-            train_classes = np.unique(self.train_data[self.target_name])
+            train_classes = np.unique(self.targets)
             if desired_output not in train_classes:
                 message = (
                     "For classification, `desired_output` must be a valid class present in training data predictions."
@@ -401,4 +407,154 @@ class NNCERegressorExplainer(RegressorExplainer):
                 param="sample",
                 hint="Select a single instance (e.g., df.iloc[[i]] or df.head(1)).",
                 source="NNCERegressorExplainer._validate_sample",
+            )
+
+
+class NNCEClassifierExplainer(ClassifierExplainer):
+    """
+    Concrete implementation of ClassifierExplainer for Nearest Neighbor-based Counterfactual Explanations.
+
+    This class wraps the NearestNeighborCE method to generate counterfactual explanations
+    for classification tasks using public training data. It automatically determines a target
+    class that differs from the current prediction of the input instance.
+
+    Parameters
+    ----------
+    model : BaseModel
+        The predictive classification model to be explained. Must implement the BaseModel interface
+        with a ``predict`` method.
+
+    data : PublicData
+        The public dataset object, containing the training data, target labels, and metadata
+        such as feature types and feasible values.
+
+    *args : object
+        Additional positional arguments passed to the parent ClassifierExplainer class.
+
+    **kwargs : object
+        Additional keyword arguments. Supports the following optional keys:
+
+        - verbose (bool): If True, enables verbose output during CE generation.
+
+    Raises
+    ------
+    ConfigurationError
+        If the provided data is not an instance of PublicData.
+
+    Attributes
+    ----------
+    model : BaseModel
+        The classification model to be explained.
+
+    data : PublicData
+        The dataset used to generate counterfactual explanations.
+
+    explainer : NearestNeighborCE
+        Instance of the NearestNeighborCE class initialized with training data, model,
+        and target variable for classification tasks.
+    """
+
+    def __init__(self, model: BaseModel, data: PublicData, *args: object, **kwargs: object) -> None:
+        if not isinstance(data, PublicData):
+            raise ConfigurationError(
+                message="`data` must be an instance of PublicData.",
+                config={"received_type": type(data).__name__},
+                param="data",
+                hint="Instantiate and pass celia.data.PublicData(...).",
+                source="NNCEClassifierExplainer.__init__",
+            )
+        super().__init__(model, data, *args, **kwargs)
+
+    def _create_explainer(
+        self, model: BaseModel, data: PublicData, *args: object, **kwargs: object
+    ) -> NearestNeighborCE:
+        target_name = data.target_name
+        train_data = data.data
+        verbose = bool(kwargs.pop("verbose", False))
+        return NearestNeighborCE(
+            train_data, model, target_name, task_type="classification", verbose=verbose, targets=data.targets
+        )
+
+    def _generate_counterfactuals(
+        self,
+        sample: pd.DataFrame | pd.Series,
+        *args: object,
+        **kwargs: object,
+    ) -> Counterfactual:
+        """
+        Generate counterfactuals using Nearest Neighbor search for classification.
+
+        Automatically determines a target class that differs from the current prediction.
+
+        Parameters
+        ----------
+        sample : pd.DataFrame | pd.Series
+            A single instance for which counterfactuals are generated.
+
+        Returns
+        -------
+        Counterfactual
+            A counterfactual explanation object.
+        """
+        n_counterfactuals = kwargs.pop("n_counterfactuals", 1)
+
+        if self.data.immutable_column_names is None:
+            mutable = self.data.column_names
+        else:
+            mutable = [col for col in self.data.column_names if col not in self.data.immutable_column_names]
+
+        # Determine desired class automatically
+        current_class = self.model.predict(sample)[0]
+        all_classes = np.unique(self.data.targets)
+        different_classes = [c for c in all_classes if c != current_class]
+
+        if not different_classes:
+            message = "No alternative class found in training data targets."
+            raise NoCounterfactualsFoundError(message)
+
+        desired_class = int(different_classes[0])
+
+        instance_df, results = self.explainer.nnce_generate_counterfactuals(
+            instance=sample,
+            desired_output=desired_class,
+            n_counterfactuals=n_counterfactuals,
+            mutable_features=mutable,
+        )
+
+        return Counterfactual(original_instance=instance_df, counterfactual_instance=results)
+
+    def _validate_sample(self, sample: pd.DataFrame | pd.Series, *args: object, **kwargs: object) -> None:
+        """Validate that NNCE receives exactly one instance at a time.
+
+        Parameters
+        ----------
+        sample : pd.DataFrame | pd.Series
+            The input sample to validate.
+
+        Raises
+        ------
+        ConfigurationError
+            If the sample contains more than one instance.
+        """
+        if not isinstance(sample, (pd.DataFrame, pd.Series)):
+            message = "Invalid input type for `sample`. Expected a pandas DataFrame or Series."
+            raise ConfigurationError(
+                message=message,
+                config={"received_type": type(sample).__name__},
+                param="sample",
+                hint="Pass either a pandas Series or a single-row DataFrame (e.g., df.iloc[[i]]).",
+                source="NNCEClassifierExplainer._validate_sample",
+            )
+
+        if isinstance(sample, pd.DataFrame) and sample.shape[0] > 1:
+            message = "`sample` must contain exactly one instance."
+            raise ConfigurationError(
+                message=message,
+                config={
+                    "rows_provided": int(sample.shape[0]),
+                    "expected_rows": 1,
+                },
+                param="sample",
+                hint="Select a single instance (e.g., df.iloc[[i]] or df.head(1)).",
+                source="NNCEClassifierExplainer._validate_sample",
             )

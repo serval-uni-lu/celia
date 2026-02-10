@@ -1,11 +1,13 @@
-import pytest
-from celia.data import PublicData
-from celia.explainers import DiceRegressorExplainer
-from celia.model import SklearnModel
-from dice_ml.explainer_interfaces.dice_random import DiceRandom
-from dice_ml.explainer_interfaces.dice_genetic import DiceGenetic
-from celia.errors import ConfigurationError
 import re
+
+import pytest
+from dice_ml.explainer_interfaces.dice_genetic import DiceGenetic
+from dice_ml.explainer_interfaces.dice_random import DiceRandom
+
+from celia.data import PublicData
+from celia.errors import ConfigurationError
+from celia.explainers import DiceClassifierExplainer, DiceRegressorExplainer
+from celia.model import SklearnModel
 
 """Unit tests for the DiceRegressorExplainer class."""
 
@@ -61,3 +63,55 @@ class TestDICERegressorExplainer:
         assert err.config == {"data_type": "InvalidData"}
 
 #def test_model_without_predict(create_model_without_predict, dummy_celia_public_data_encoded):
+
+
+class TestDICEClassifierExplainer:
+
+    @pytest.mark.parametrize("method, expected_cls", [("random", DiceRandom), ("genetic", DiceGenetic)])
+    def test_dice_classifier_with_valid_init(
+            self,
+            method,
+            expected_cls,
+            model_trained_classifier_stratified,
+            celia_public_data_classification,
+    ):
+        explainer = DiceClassifierExplainer(
+            model=model_trained_classifier_stratified,
+            data=celia_public_data_classification,
+            method=method,
+        )
+
+        assert isinstance(explainer, DiceClassifierExplainer)
+        assert isinstance(explainer.explainer, expected_cls)
+        assert isinstance(explainer.data, PublicData)
+        assert isinstance(explainer.model, SklearnModel)
+
+    def test_dice_classifier_with_invalid_method(
+            self,
+            model_trained_classifier_stratified,
+            celia_public_data_classification,
+    ):
+        with pytest.raises(Exception, match=r"Unsupported sample strategy .* provided\. Please choose one of .*"):
+            DiceClassifierExplainer(
+                model=model_trained_classifier_stratified,
+                data=celia_public_data_classification,
+                method="invalid_method",
+            )
+
+    def test_dice_classifier_invalid_data_object(self, model_trained_classifier):
+        class InvalidData:
+            pass
+
+        invalid_data = InvalidData()
+
+        with pytest.raises(ConfigurationError) as exc_info:
+            DiceClassifierExplainer(
+                model=model_trained_classifier,
+                data=invalid_data,
+            )
+
+        err = exc_info.value
+        assert re.search(r"requires data to be an instance of PublicData\.", str(err.message))
+        assert err.param == "data"
+        assert err.hint.startswith("Please provide")
+        assert err.config == {"data_type": "InvalidData"}

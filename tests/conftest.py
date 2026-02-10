@@ -1,6 +1,7 @@
 import pytest
 import pandas as pd
-from sklearn.dummy import DummyRegressor
+from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.tree import DecisionTreeClassifier
 from celia.model import SklearnModel
 from celia.data import PublicData
 
@@ -148,3 +149,86 @@ def model_trained_with_encoded_data(dummy_regression_dataframe_encoded) -> Sklea
 
     return SklearnModel(model)
 
+
+# ── Classification fixtures ──────────────────────────────────────────────────
+
+
+@pytest.fixture
+def dummy_classification_dataframe() -> pd.DataFrame:
+    """Small classification dataset with numeric features and binary target."""
+    dataset = {
+        'feature1': [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+        'feature2': [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0],
+        'feature3': [100.0, 200.0, 300.0, 400.0, 500.0, 600.0, 700.0, 800.0],
+        'target': [0, 1, 0, 1, 0, 1, 0, 1],
+    }
+    return pd.DataFrame(dataset)
+
+
+@pytest.fixture
+def dummy_classification_dataframe_with_categories() -> pd.DataFrame:
+    """Classification dataset with mixed types (includes string column)."""
+    dataset = {
+        'feature1': [1.0, 2.0, 3.0, 4.0, 5.0],
+        'feature2': [10.0, 20.0, 30.0, 40.0, 50.0],
+        'feature3': ["A", "B", "A", "B", "A"],
+        'target': [0, 1, 0, 1, 0],
+    }
+    return pd.DataFrame(dataset)
+
+
+@pytest.fixture
+def celia_public_data_classification(dummy_classification_dataframe) -> PublicData:
+    data = dummy_classification_dataframe.drop(columns=['target'])
+    targets = dummy_classification_dataframe['target']
+    return PublicData(
+        data=data,
+        targets=targets,
+        target_name='target',
+        column_names=data.columns.tolist(),
+        continuous_column_names=data.columns.tolist(),
+        categorical_column_names=[],
+        immutable_column_names=['feature1'],
+        feasible_values=build_feasible_values(dummy_classification_dataframe),
+    )
+
+
+@pytest.fixture
+def celia_public_data_classification_with_categories(
+    dummy_classification_dataframe_with_categories,
+) -> PublicData:
+    data = dummy_classification_dataframe_with_categories.drop(columns=['target'])
+    targets = dummy_classification_dataframe_with_categories['target']
+    return PublicData(
+        data=data,
+        targets=targets,
+        target_name='target',
+        column_names=data.columns.tolist(),
+        continuous_column_names=data.select_dtypes(include=['float', 'int']).columns.tolist(),
+        categorical_column_names=data.select_dtypes(include=['object']).columns.tolist(),
+        immutable_column_names=['feature1'],
+        feasible_values=build_feasible_values(dummy_classification_dataframe_with_categories),
+    )
+
+
+@pytest.fixture
+def model_trained_classifier(dummy_classification_dataframe) -> SklearnModel:
+    X = dummy_classification_dataframe.drop(columns=['target'])
+    y = dummy_classification_dataframe['target']
+    model = DummyClassifier(strategy="most_frequent")
+    model.fit(X, y)
+    return SklearnModel(model)
+
+
+@pytest.fixture
+def model_trained_classifier_stratified(dummy_classification_dataframe) -> SklearnModel:
+    X = dummy_classification_dataframe.drop(columns=['target'])
+    y = dummy_classification_dataframe['target']
+    model = DecisionTreeClassifier()
+    model.fit(X, y)
+    return SklearnModel(model)
+
+
+@pytest.fixture
+def dummy_test_classification_sample(dummy_classification_dataframe) -> pd.DataFrame:
+    return dummy_classification_dataframe.drop(columns=['target']).iloc[[0]]
