@@ -373,7 +373,10 @@ class NNCERegressorExplainer(RegressorExplainer):
             instance=sample, desired_output=target_range, n_counterfactuals=n_counterfactuals, mutable_features=mutable
         )
 
-        return Counterfactual(original_instance=instance_df, counterfactual_instance=results)
+        return Counterfactual(original_instance=instance_df.drop(columns=[self.data.target_name]),
+                              counterfactual_instance=results.drop(columns=[self.data.target_name]),
+                              original_prediction=instance_df[self.data.target_name].iloc[0],
+                              counterfactual_prediction=results[self.data.target_name].tolist())
 
     def _validate_sample(self, sample: pd.DataFrame | pd.Series, *args, **kwargs) -> None:
         """Validate that NNCE receives exactly one instance at a time.
@@ -521,7 +524,10 @@ class NNCEClassifierExplainer(ClassifierExplainer):
             mutable_features=mutable,
         )
 
-        return Counterfactual(original_instance=instance_df, counterfactual_instance=results)
+        return Counterfactual(original_instance=instance_df.drop(columns=[self.data.target_name]),
+                              counterfactual_instance=results.drop(columns=[self.data.target_name]),
+                              original_prediction=instance_df[self.data.target_name].iloc[0],
+                              counterfactual_prediction=results[self.data.target_name].tolist())
 
     def _validate_sample(self, sample: pd.DataFrame | pd.Series, *args: object, **kwargs: object) -> None:
         """Validate that NNCE receives exactly one instance at a time.

@@ -153,8 +153,10 @@ class CertifaiRegressorExplainer(RegressorExplainer):
 
             counterfactual_df = pd.DataFrame(counterfactual_array, columns=columns)
             cf = Counterfactual(
-                original_instance=original_instance,
-                counterfactual_instance=counterfactual_df,
+                original_instance=original_instance.drop(columns=[self.data.target_name]),
+                counterfactual_instance=counterfactual_df.drop(columns=[self.data.target_name]),
+                original_prediction=original_instance[self.data.target_name].iloc[0],
+                counterfactual_prediction=counterfactual_df[self.data.target_name].iloc[0],
             )
             counterfactuals.append(cf)
 
@@ -315,8 +317,10 @@ class CertifaiClassifierExplainer(ClassifierExplainer):
 
             counterfactual_df = pd.DataFrame(counterfactual_array, columns=columns)
             cf = Counterfactual(
-                original_instance=original_instance,
-                counterfactual_instance=counterfactual_df,
+                original_instance=original_instance.drop(columns=[self.data.target_name]),
+                counterfactual_instance=counterfactual_df.drop(columns=[self.data.target_name]),
+                original_prediction=original_instance[self.data.target_name].iloc[0],
+                counterfactual_prediction=counterfactual_df[self.data.target_name].iloc[0],
             )
             counterfactuals.append(cf)
 

@@ -400,10 +400,10 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                     feature_names=feature_names,
                 )
                 cf_list.append(
-                    Counterfactual(
-                        original_instance=original_df,
-                        counterfactual_instance=cf_df,
-                    )
+                    Counterfactual(original_instance= original_df.drop(columns=["Prediction"]),
+                              counterfactual_instance= cf_df.drop(columns=["Prediction"]),
+                              original_prediction= original_df["Prediction"].iloc[0],
+                              counterfactual_prediction=cf_df["Prediction"].iloc[0])
                 )
             return cf_list
 
@@ -420,7 +420,11 @@ class GRACEClassifierExplainer(ClassifierExplainer):
             feature_selector=feature_selector,
             feature_names=feature_names,
         )
-        return Counterfactual(original_instance=original_df, counterfactual_instance=cf_df)
+
+        return Counterfactual(original_instance= original_df.drop(columns=["Prediction"]),
+                              counterfactual_instance= cf_df.drop(columns=["Prediction"]),
+                              original_prediction= original_df["Prediction"].iloc[0],
+                              counterfactual_prediction=cf_df["Prediction"].iloc[0])
 
     def _obtain_feasible_ranges(
         self,

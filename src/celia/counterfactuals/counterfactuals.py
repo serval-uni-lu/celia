@@ -19,11 +19,15 @@ class Counterfactual:
         self,
         original_instance: pd.Series | pd.DataFrame,
         counterfactual_instance: pd.Series | pd.DataFrame,
+        original_prediction: int | float | str,
+        counterfactual_prediction: int | float | str | list[int] | list[float] | list[str],
     ) -> None:
         (
             self._original_instance,
             self._counterfactuals,
-        ) = self._validate_init(original_instance, counterfactual_instance)
+            self._original_prediction,
+            self._counterfactual_prediction,
+        ) = self._validate_init(original_instance, counterfactual_instance, original_prediction, counterfactual_prediction)
 
         self._highlighted_counterfactuals = self._create_highlighted_counterfactuals()
 
@@ -42,6 +46,16 @@ class Counterfactual:
         """A pandas DataFrame indicating which values changed relative to the original instance."""
         return self._highlighted_counterfactuals
 
+    @property
+    def original_prediction(self) -> int | float | str:
+        """The model's prediction for the original instance."""
+        return self._original_prediction
+
+    @property
+    def counterfactual_prediction(self) -> int | float | str | list[int] | list[float] | list[str]:
+        """The model's prediction for the counterfactual instance(s)."""
+        return self._counterfactual_prediction
+
     def _create_highlighted_counterfactuals(self) -> pd.DataFrame:
         """
         Create a pandas DataFrame marking changes from the original instance.
@@ -57,20 +71,34 @@ class Counterfactual:
             original_value = self.original_instance.iloc[0][col]
             highlighted[col] = highlighted[col].where(highlighted[col] != original_value, "-")
 
+        prediction_cells: list[str]
+        if isinstance(self.counterfactual_prediction, list):
+            prediction_cells = [f"{self.original_prediction} → {pred}" for pred in self.counterfactual_prediction]
+        else:
+            prediction_cells = [f"{self.original_prediction} → {self.counterfactual_prediction}"] * len(highlighted)
+
+        highlighted["Prediction"] = prediction_cells
         return highlighted
 
     def _validate_init(
         self,
         original_instance: pd.Series | pd.DataFrame,
         counterfactual_instance: pd.Series | pd.DataFrame,
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        original_prediction: int | float | str,
+        counterfactual_prediction: int | float | str | list[int] | list[float] | list[str],
+    ) -> tuple[pd.DataFrame, pd.DataFrame, int | float | str, int | float | str | list[int] | list[float] | list[str]]:
         """
-        Validate input types and ensure counterfactuals are non-empty.
+        Validate input types, predictions, and ensure counterfactuals are non-empty.
 
         Returns
         -------
-        tuple[pd.DataFrame, pd.DataFrame]
-            Validated original and counterfactual instances as DataFrames.
+        tuple[pd.DataFrame, pd.DataFrame, int | float | str, int | float | str | list[int] | list[float] | list[str]]
+            A tuple containing:
+                - original_instance: validated original instance as a DataFrame
+                - counterfactual_instance: validated counterfactual instance(s) as a DataFrame
+                - original_prediction: validated prediction for the original instance
+                - counterfactual_prediction: validated prediction for the counterfactual instance(s)
+
 
         Raises
         ------
@@ -106,6 +134,61 @@ class Counterfactual:
                 source="Counterfactual._validate_init",
             )
 
+        if not isinstance(original_prediction, (int, float, str)):
+            message = "Original Prediction must be an int, float, or str."
+            raise MethodValueError(
+                message=message,
+                config={"type": type(original_prediction).__name__},
+                param="original_prediction",
+                hint="Ensure the original prediction is a valid type (int, float, or str).",
+                source="Counterfactual._validate_init",
+            )
+
+        if not isinstance(counterfactual_prediction, (int, float, str, list)):
+            message = "Counterfactual Prediction must be an int, float, str, or a list of those types."
+            raise MethodValueError(
+                message=message,
+                config={"type": type(counterfactual_prediction).__name__},
+                param="counterfactual_prediction",
+                hint="Ensure the counterfactual prediction is a valid type (int, float, str, list).",
+                source="Counterfactual._validate_init",
+            )
+
+
+
+        if isinstance(counterfactual_prediction, list):
+            if not counterfactual_prediction:
+                message = "Counterfactual Prediction list cannot be empty."
+                raise MethodValueError(
+                    message=message,
+                    config={},
+                    param="counterfactual_prediction",
+                    hint="Ensure the counterfactual prediction list contains at least one element.",
+                    source="Counterfactual._validate_init",
+                )
+
+            n_counterfactuals = len(counterfactual_instance)
+            if len(counterfactual_prediction) != n_counterfactuals:
+                message = "Counterfactual Prediction list length must match number of counterfactual rows."
+                raise MethodValueError(
+                    message=message,
+                    config={"n_rows": n_counterfactuals, "len_predictions": len(counterfactual_prediction)},
+                    param="counterfactual_prediction",
+                    hint="Provide one prediction per counterfactual row.",
+                    source="Counterfactual._validate_init",
+                )
+
+            first_type = type(counterfactual_prediction[0])
+            if not all(isinstance(pred, first_type) for pred in counterfactual_prediction):
+                message = "All elements in Counterfactual Prediction list must be of the same type."
+                raise MethodValueError(
+                    message=message,
+                    config={"types": [type(pred).__name__ for pred in counterfactual_prediction]},
+                    param="counterfactual_prediction",
+                    hint="Ensure all predictions in the list are of the same type (int, float, or str).",
+                    source="Counterfactual._validate_init",
+                )
+
         # Validate matching columns
         self._validate_counterfactuals(original_instance, counterfactual_instance)
 
@@ -116,7 +199,9 @@ class Counterfactual:
         if isinstance(counterfactual_instance, pd.Series):
             counterfactual_instance = counterfactual_instance.to_frame().T
 
-        return original_instance, counterfactual_instance
+
+
+        return original_instance, counterfactual_instance, original_prediction, counterfactual_prediction
 
     @staticmethod
     def _validate_counterfactuals(

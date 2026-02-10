@@ -151,12 +151,11 @@ class DiceRegressorExplainer(RegressorExplainer):
             # DiCE modifies predictions; compute true predictions
             original_pred, cf_preds = self._get_true_predictions(cf_group)
 
-            cf_group.test_instance_df[self.data.target_name] = original_pred
-            cf_group.final_cfs_df[self.data.target_name] = cf_preds
-
             ce = Counterfactual(
                 original_instance=cf_group.test_instance_df,
                 counterfactual_instance=cf_group.final_cfs_df,
+                original_prediction=original_pred,
+                counterfactual_prediction=cf_preds,
             )
             counterfactual_list.append(ce)
 
@@ -336,12 +335,11 @@ class DiceClassifierExplainer(ClassifierExplainer):
         for cf_group in results.cf_examples_list:
             original_pred, cf_preds = self._get_true_predictions(cf_group)
 
-            cf_group.test_instance_df[self.data.target_name] = original_pred
-            cf_group.final_cfs_df[self.data.target_name] = cf_preds
-
             ce = Counterfactual(
                 original_instance=cf_group.test_instance_df,
                 counterfactual_instance=cf_group.final_cfs_df,
+                original_prediction=original_pred,
+                counterfactual_prediction=cf_preds,
             )
             counterfactual_list.append(ce)
 
