@@ -1,7 +1,12 @@
+from numbers import Real
+from typing import TypeAlias
+
 import pandas as pd
 
 from celia.errors import MethodError, MethodValueError
 
+Prediction: TypeAlias = Real | str
+Predictions: TypeAlias = Prediction | list[Real] | list[str]
 
 class Counterfactual:
     """
@@ -19,15 +24,17 @@ class Counterfactual:
         self,
         original_instance: pd.Series | pd.DataFrame,
         counterfactual_instance: pd.Series | pd.DataFrame,
-        original_prediction: int | float | str,
-        counterfactual_prediction: int | float | str | list[int] | list[float] | list[str],
+        original_prediction: Prediction,
+        counterfactual_prediction: Predictions,
     ) -> None:
         (
             self._original_instance,
             self._counterfactuals,
             self._original_prediction,
             self._counterfactual_prediction,
-        ) = self._validate_init(original_instance, counterfactual_instance, original_prediction, counterfactual_prediction)
+        ) = self._validate_init(
+            original_instance, counterfactual_instance, original_prediction, counterfactual_prediction
+        )
 
         self._highlighted_counterfactuals = self._create_highlighted_counterfactuals()
 
@@ -47,12 +54,12 @@ class Counterfactual:
         return self._highlighted_counterfactuals
 
     @property
-    def original_prediction(self) -> int | float | str:
+    def original_prediction(self) -> Prediction:
         """The model's prediction for the original instance."""
         return self._original_prediction
 
     @property
-    def counterfactual_prediction(self) -> int | float | str | list[int] | list[float] | list[str]:
+    def counterfactual_prediction(self) -> Predictions:
         """The model's prediction for the counterfactual instance(s)."""
         return self._counterfactual_prediction
 
@@ -84,9 +91,9 @@ class Counterfactual:
         self,
         original_instance: pd.Series | pd.DataFrame,
         counterfactual_instance: pd.Series | pd.DataFrame,
-        original_prediction: int | float | str,
-        counterfactual_prediction: int | float | str | list[int] | list[float] | list[str],
-    ) -> tuple[pd.DataFrame, pd.DataFrame, int | float | str, int | float | str | list[int] | list[float] | list[str]]:
+        original_prediction: Prediction,
+        counterfactual_prediction: Predictions,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, Prediction, Predictions]:
         """
         Validate input types, predictions, and ensure counterfactuals are non-empty.
 
@@ -134,7 +141,7 @@ class Counterfactual:
                 source="Counterfactual._validate_init",
             )
 
-        if not isinstance(original_prediction, (int, float, str)):
+        if not _is_prediction(original_prediction):
             message = "Original Prediction must be an int, float, or str."
             raise MethodValueError(
                 message=message,
@@ -144,7 +151,7 @@ class Counterfactual:
                 source="Counterfactual._validate_init",
             )
 
-        if not isinstance(counterfactual_prediction, (int, float, str, list)):
+        if not _is_predictions(counterfactual_prediction):
             message = "Counterfactual Prediction must be an int, float, str, or a list of those types."
             raise MethodValueError(
                 message=message,
@@ -153,8 +160,6 @@ class Counterfactual:
                 hint="Ensure the counterfactual prediction is a valid type (int, float, str, list).",
                 source="Counterfactual._validate_init",
             )
-
-
 
         if isinstance(counterfactual_prediction, list):
             if not counterfactual_prediction:
@@ -198,8 +203,6 @@ class Counterfactual:
 
         if isinstance(counterfactual_instance, pd.Series):
             counterfactual_instance = counterfactual_instance.to_frame().T
-
-
 
         return original_instance, counterfactual_instance, original_prediction, counterfactual_prediction
 
@@ -247,3 +250,19 @@ class Counterfactual:
                 hint="Ensure the counterfactual generator preserves the number of features.",
                 source="Counterfactual._validate_counterfactuals",
             )
+
+
+def _is_prediction(value: object) -> bool:
+    """Check if *value* is a valid single prediction (Real or str, but not bool)."""
+    if isinstance(value, bool):
+        return False
+    return isinstance(value, (Real, str))
+
+
+def _is_predictions(value: object) -> bool:
+    """Check if *value* is a valid Predictions (scalar or list of homogeneous predictions)."""
+    if _is_prediction(value):
+        return True
+    if isinstance(value, list):
+        return all(_is_prediction(item) for item in value)
+    return False
