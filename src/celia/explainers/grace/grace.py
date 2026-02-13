@@ -276,11 +276,11 @@ class GRACE:
 
         # Normalize incoming instance to Tensor
         if isinstance(original_instance, pd.DataFrame):
-            original_tensor = torch.from_numpy(original_instance.to_numpy()).float()
+            original_tensor = torch.tensor(original_instance.to_numpy(),dtype=torch.float32)
         elif isinstance(original_instance, pd.Series):
-            original_tensor = torch.from_numpy(original_instance.to_numpy().reshape(1, -1)).float()
+            original_tensor = torch.as_tensor(original_instance.to_numpy(),dtype=torch.float32).reshape(1, -1)
         elif isinstance(original_instance, np.ndarray):
-            original_tensor = torch.from_numpy(original_instance).float()
+            original_tensor = torch.tensor(original_instance.to_numpy(),dtype=torch.float32)
         else:
             original_tensor = original_instance  # already Tensor
 
@@ -400,10 +400,10 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                     feature_names=feature_names,
                 )
                 cf_list.append(
-                    Counterfactual(
-                        original_instance=original_df,
-                        counterfactual_instance=cf_df,
-                    )
+                    Counterfactual(original_instance= original_df.drop(columns=["Prediction"]),
+                              counterfactual_instance= cf_df.drop(columns=["Prediction"]),
+                              original_prediction= original_df["Prediction"].iloc[0],
+                              counterfactual_prediction=cf_df["Prediction"].iloc[0])
                 )
             return cf_list
 
@@ -420,7 +420,11 @@ class GRACEClassifierExplainer(ClassifierExplainer):
             feature_selector=feature_selector,
             feature_names=feature_names,
         )
-        return Counterfactual(original_instance=original_df, counterfactual_instance=cf_df)
+
+        return Counterfactual(original_instance= original_df.drop(columns=["Prediction"]),
+                              counterfactual_instance= cf_df.drop(columns=["Prediction"]),
+                              original_prediction= original_df["Prediction"].iloc[0],
+                              counterfactual_prediction=cf_df["Prediction"].iloc[0])
 
     def _obtain_feasible_ranges(
         self,

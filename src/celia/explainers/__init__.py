@@ -1,15 +1,18 @@
 from ._base import BaseExplainer, ClassifierExplainer, RegressorExplainer
-from .certifai import CertifaiRegressorExplainer
-from .dice import DiceRegressorExplainer
+from .certifai import CertifaiClassifierExplainer, CertifaiRegressorExplainer
+from .dice import DiceClassifierExplainer, DiceRegressorExplainer
 from .grace import GRACEClassifierExplainer
-from .nnce import NNCERegressorExplainer
+from .nnce import NNCEClassifierExplainer, NNCERegressorExplainer
 
 __all__ = [
     "BaseExplainer",
     "RegressorExplainer",
     "ClassifierExplainer",
-    "NNCERegressorExplainer",
+    "CertifaiClassifierExplainer",
     "CertifaiRegressorExplainer",
+    "DiceClassifierExplainer",
     "DiceRegressorExplainer",
     "GRACEClassifierExplainer",
+    "NNCEClassifierExplainer",
+    "NNCERegressorExplainer",
 ]
