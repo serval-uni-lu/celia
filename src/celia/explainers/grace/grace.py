@@ -276,11 +276,11 @@ class GRACE:
 
         # Normalize incoming instance to Tensor
         if isinstance(original_instance, pd.DataFrame):
-            original_tensor = torch.from_numpy(original_instance.to_numpy()).float()
+            original_tensor = torch.tensor(original_instance.to_numpy(),dtype=torch.float32)
         elif isinstance(original_instance, pd.Series):
-            original_tensor = torch.from_numpy(original_instance.to_numpy().reshape(1, -1)).float()
+            original_tensor = torch.as_tensor(original_instance.to_numpy(),dtype=torch.float32).reshape(1, -1)
         elif isinstance(original_instance, np.ndarray):
-            original_tensor = torch.from_numpy(original_instance).float()
+            original_tensor = torch.tensor(original_instance.to_numpy(),dtype=torch.float32)
         else:
             original_tensor = original_instance  # already Tensor
 
