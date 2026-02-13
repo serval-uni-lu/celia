@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 from sklearn.metrics import pairwise_distances
@@ -116,7 +118,8 @@ class NearestNeighborCE:
             print(f"Available Candidates in Mutable Features: {len(candidates)}")
 
         if candidates.empty:
-            raise NoCounterfactualsFoundError(message="No candidates found with matching immutable features.")
+            warnings.warn("No candidates found with matching immutable features.", stacklevel=2)
+            return None
 
         # Step 3: Predict candidate outputs
         candidate_preds = self.model.predict(candidates)
@@ -133,7 +136,8 @@ class NearestNeighborCE:
         valid_candidates = candidates.iloc[valid_idx]
 
         if valid_candidates.empty:
-            raise NoCounterfactualsFoundError(message="No candidates found matching the desired output.")
+            warnings.warn("No candidates found matching the desired output.", stacklevel=2)
+            return None
 
         # Step 5: Distance calculation in mutable feature space
         instance_mutable = instance[mutable_features].to_numpy().reshape(1, -1)
@@ -359,35 +363,61 @@ class NNCERegressorExplainer(RegressorExplainer):
         target_range: list[float] | tuple[float, float],
         *args: object,
         **kwargs: object,
-    ) -> Counterfactual:
-        # Check if user provided n_counterfactuals in kwargs, else default to 1
+    ) -> Counterfactual | list[Counterfactual]:
         n_counterfactuals = kwargs.pop("n_counterfactuals", 1)
 
-        # Check if self.data has mutable_features, else default to None
         if self.data.immutable_column_names is None:
             mutable = self.data.column_names
         else:
             mutable = [col for col in self.data.column_names if col not in self.data.immutable_column_names]
 
-        instance_df, results = self.explainer.nnce_generate_counterfactuals(
-            instance=sample, desired_output=target_range, n_counterfactuals=n_counterfactuals, mutable_features=mutable
-        )
+        if isinstance(sample, pd.Series):
+            sample = sample.to_frame().T
 
-        return Counterfactual(original_instance=instance_df.drop(columns=[self.data.target_name]),
-                              counterfactual_instance=results.drop(columns=[self.data.target_name]),
-                              original_prediction=instance_df[self.data.target_name].iloc[0],
-                              counterfactual_prediction=results[self.data.target_name].tolist())
+        counterfactual_list: list[Counterfactual] = []
+
+        for idx in range(sample.shape[0]):
+            instance = sample.iloc[[idx]]
+            result = self.explainer.nnce_generate_counterfactuals(
+                instance=instance,
+                desired_output=target_range,
+                n_counterfactuals=n_counterfactuals,
+                mutable_features=mutable,
+            )
+
+            if result is None:
+                continue
+
+            instance_df, results = result
+            counterfactual_list.append(
+                Counterfactual(
+                    original_instance=instance_df.drop(columns=[self.data.target_name]),
+                    counterfactual_instance=results.drop(columns=[self.data.target_name]),
+                    original_prediction=instance_df[self.data.target_name].iloc[0],
+                    counterfactual_prediction=results[self.data.target_name].tolist(),
+                )
+            )
+
+        if not counterfactual_list:
+            message = "No counterfactuals found for any of the provided instances."
+            raise NoCounterfactualsFoundError(
+                message=message,
+                source="NNCERegressorExplainer._generate_counterfactuals",
+            )
+
+        return counterfactual_list[0] if len(counterfactual_list) == 1 else counterfactual_list
 
     def _validate_sample(self, sample: pd.DataFrame | pd.Series, *args, **kwargs) -> None:
-        """Validate that NNCE receives exactly one instance at a time.
+        """Validate the input sample type for NNCE.
 
         Parameters
         ----------
-        sample : Union[pd.DataFrame, pd.Series]
+        sample : pd.DataFrame | pd.Series
             The input sample to validate.
-         Raises
-         ------
-         ConfigurationError
+
+        Raises
+        ------
+        ConfigurationError
         """
         if not isinstance(sample, (pd.DataFrame, pd.Series)):
             message = "Invalid input type for `sample`. Expected a pandas DataFrame or Series."
@@ -395,20 +425,7 @@ class NNCERegressorExplainer(RegressorExplainer):
                 message=message,
                 config={"received_type": type(sample).__name__},
                 param="sample",
-                hint="Pass either a pandas Series or a single-row DataFrame (e.g., df.iloc[[i]]).",
-                source="NNCERegressorExplainer._validate_sample",
-            )
-
-        if isinstance(sample, pd.DataFrame) and sample.shape[0] > 1:
-            message = "`sample` must contain exactly one instance."
-            raise ConfigurationError(
-                message=message,
-                config={
-                    "rows_provided": int(sample.shape[0]),
-                    "expected_rows": 1,
-                },
-                param="sample",
-                hint="Select a single instance (e.g., df.iloc[[i]] or df.head(1)).",
+                hint="Pass either a pandas Series or a DataFrame (e.g., df.iloc[[i]]).",
                 source="NNCERegressorExplainer._validate_sample",
             )
 
@@ -483,21 +500,22 @@ class NNCEClassifierExplainer(ClassifierExplainer):
         sample: pd.DataFrame | pd.Series,
         *args: object,
         **kwargs: object,
-    ) -> Counterfactual:
+    ) -> Counterfactual | list[Counterfactual]:
         """
         Generate counterfactuals using Nearest Neighbor search for classification.
 
-        Automatically determines a target class that differs from the current prediction.
+        Automatically determines a target class that differs from the current prediction
+        for each instance. Supports single or multiple instances.
 
         Parameters
         ----------
         sample : pd.DataFrame | pd.Series
-            A single instance for which counterfactuals are generated.
+            One or more instances for which counterfactuals are generated.
 
         Returns
         -------
-        Counterfactual
-            A counterfactual explanation object.
+        Counterfactual | list[Counterfactual]
+            A single counterfactual object or a list of them.
         """
         n_counterfactuals = kwargs.pop("n_counterfactuals", 1)
 
@@ -506,31 +524,58 @@ class NNCEClassifierExplainer(ClassifierExplainer):
         else:
             mutable = [col for col in self.data.column_names if col not in self.data.immutable_column_names]
 
-        # Determine desired class automatically
-        current_class = self.model.predict(sample)[0]
+        if isinstance(sample, pd.Series):
+            sample = sample.to_frame().T
+
         all_classes = np.unique(self.data.targets)
-        different_classes = [c for c in all_classes if c != current_class]
+        counterfactual_list: list[Counterfactual] = []
 
-        if not different_classes:
-            message = "No alternative class found in training data targets."
-            raise NoCounterfactualsFoundError(message)
+        for idx in range(sample.shape[0]):
+            instance = sample.iloc[[idx]]
 
-        desired_class = int(different_classes[0])
+            current_class = self.model.predict(instance)[0]
+            different_classes = [c for c in all_classes if c != current_class]
 
-        instance_df, results = self.explainer.nnce_generate_counterfactuals(
-            instance=sample,
-            desired_output=desired_class,
-            n_counterfactuals=n_counterfactuals,
-            mutable_features=mutable,
-        )
+            if not different_classes:
+                warnings.warn(
+                    f"No alternative class found for instance at index {sample.index[idx]}.",
+                    stacklevel=2,
+                )
+                continue
 
-        return Counterfactual(original_instance=instance_df.drop(columns=[self.data.target_name]),
-                              counterfactual_instance=results.drop(columns=[self.data.target_name]),
-                              original_prediction=instance_df[self.data.target_name].iloc[0],
-                              counterfactual_prediction=results[self.data.target_name].tolist())
+            desired_class = int(different_classes[0])
+
+            result = self.explainer.nnce_generate_counterfactuals(
+                instance=instance,
+                desired_output=desired_class,
+                n_counterfactuals=n_counterfactuals,
+                mutable_features=mutable,
+            )
+
+            if result is None:
+                continue
+
+            instance_df, results = result
+            counterfactual_list.append(
+                Counterfactual(
+                    original_instance=instance_df.drop(columns=[self.data.target_name]),
+                    counterfactual_instance=results.drop(columns=[self.data.target_name]),
+                    original_prediction=instance_df[self.data.target_name].iloc[0],
+                    counterfactual_prediction=results[self.data.target_name].tolist(),
+                )
+            )
+
+        if not counterfactual_list:
+            message = "No counterfactuals found for any of the provided instances."
+            raise NoCounterfactualsFoundError(
+                message=message,
+                source="NNCEClassifierExplainer._generate_counterfactuals",
+            )
+
+        return counterfactual_list[0] if len(counterfactual_list) == 1 else counterfactual_list
 
     def _validate_sample(self, sample: pd.DataFrame | pd.Series, *args: object, **kwargs: object) -> None:
-        """Validate that NNCE receives exactly one instance at a time.
+        """Validate the input sample type for NNCE.
 
         Parameters
         ----------
@@ -540,7 +585,6 @@ class NNCEClassifierExplainer(ClassifierExplainer):
         Raises
         ------
         ConfigurationError
-            If the sample contains more than one instance.
         """
         if not isinstance(sample, (pd.DataFrame, pd.Series)):
             message = "Invalid input type for `sample`. Expected a pandas DataFrame or Series."
@@ -548,19 +592,6 @@ class NNCEClassifierExplainer(ClassifierExplainer):
                 message=message,
                 config={"received_type": type(sample).__name__},
                 param="sample",
-                hint="Pass either a pandas Series or a single-row DataFrame (e.g., df.iloc[[i]]).",
-                source="NNCEClassifierExplainer._validate_sample",
-            )
-
-        if isinstance(sample, pd.DataFrame) and sample.shape[0] > 1:
-            message = "`sample` must contain exactly one instance."
-            raise ConfigurationError(
-                message=message,
-                config={
-                    "rows_provided": int(sample.shape[0]),
-                    "expected_rows": 1,
-                },
-                param="sample",
-                hint="Select a single instance (e.g., df.iloc[[i]] or df.head(1)).",
+                hint="Pass either a pandas Series or a DataFrame (e.g., df.iloc[[i]]).",
                 source="NNCEClassifierExplainer._validate_sample",
             )

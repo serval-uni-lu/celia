@@ -121,22 +121,40 @@ class CertifaiRegressorExplainer(RegressorExplainer):
             target_lower = np.full(shape=(len(sample),), fill_value=target_lower.item())
             target_upper = np.full(shape=(len(sample),), fill_value=target_upper.item())
 
-        self.explainer.fit(
-            self.model,
-            x=sample,
-            generations=generations,
-            distance=distance,
-            final_k=final_k,
-            classification=False,
-            trained_with_columns=trained_with_columns,
-            target_name=self.data.target_name,
-            target_lower=target_lower,
-            target_upper=target_upper,
-            model_type=model_type,
-            select_retain=select_retain,
-            gen_retain=gen_retain,
-            verbose=verbose,
-        )
+        if model_type  == "torch":
+            self.explainer.fit(
+                self.model.raw_model,
+                x=sample,
+                generations=generations,
+                distance=distance,
+                final_k=final_k,
+                classification=False,
+                trained_with_columns=trained_with_columns,
+                target_name=self.data.target_name,
+                target_lower=target_lower,
+                target_upper=target_upper,
+                model_type=model_type,
+                select_retain=select_retain,
+                gen_retain=gen_retain,
+                verbose=verbose,
+            )
+        else:
+            self.explainer.fit(
+                self.model,
+                x=sample,
+                generations=generations,
+                distance=distance,
+                final_k=final_k,
+                classification=False,
+                trained_with_columns=trained_with_columns,
+                target_name=self.data.target_name,
+                target_lower=target_lower,
+                target_upper=target_upper,
+                model_type=model_type,
+                select_retain=select_retain,
+                gen_retain=gen_retain,
+                verbose=verbose,
+            )
 
         if not self.explainer.results:
             message = "No counterfactuals generated. Check the input parameters and data."
@@ -287,20 +305,36 @@ class CertifaiClassifierExplainer(ClassifierExplainer):
         gen_retain = kwargs.get("gen_retain", 500)
         verbose = kwargs.get("verbose", False)
 
-        self.explainer.fit(
-            self.model,
-            x=sample,
-            generations=generations,
-            distance=distance,
-            final_k=final_k,
-            classification=True,
-            trained_with_columns=trained_with_columns,
-            target_name=self.data.target_name,
-            model_type=model_type,
-            select_retain=select_retain,
-            gen_retain=gen_retain,
-            verbose=verbose,
-        )
+        if model_type == "torch":
+            self.explainer.fit(
+                self.model.raw_model,
+                x=sample,
+                generations=generations,
+                distance=distance,
+                final_k=final_k,
+                classification=True,
+                trained_with_columns=trained_with_columns,
+                target_name=self.data.target_name,
+                model_type=model_type,
+                select_retain=select_retain,
+                gen_retain=gen_retain,
+                verbose=verbose,
+            )
+        else:
+            self.explainer.fit(
+                self.model,
+                x=sample,
+                generations=generations,
+                distance=distance,
+                final_k=final_k,
+                classification=True,
+                trained_with_columns=trained_with_columns,
+                target_name=self.data.target_name,
+                model_type=model_type,
+                select_retain=select_retain,
+                gen_retain=gen_retain,
+                verbose=verbose,
+            )
 
         if not self.explainer.results:
             message = "No counterfactuals generated. Check the input parameters and data."

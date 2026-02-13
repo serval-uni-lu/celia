@@ -149,11 +149,11 @@ class DiceRegressorExplainer(RegressorExplainer):
 
         for cf_group in results.cf_examples_list:
             # DiCE modifies predictions; compute true predictions
-            original_pred, cf_preds = self._get_true_predictions(cf_group)
+            original_instance, counterfactual_instances, original_pred, cf_preds = self._get_true_predictions(cf_group)
 
             ce = Counterfactual(
-                original_instance=cf_group.test_instance_df,
-                counterfactual_instance=cf_group.final_cfs_df,
+                original_instance=original_instance,
+                counterfactual_instance=counterfactual_instances,
                 original_prediction=original_pred,
                 counterfactual_prediction=cf_preds,
             )
@@ -164,8 +164,8 @@ class DiceRegressorExplainer(RegressorExplainer):
     def _get_true_predictions(
         self,
         counterfactuals: dice_CounterfactualExamples,
-    ) -> tuple[float, list[float]]:
-        """Get the true model predictions for the original instance and counterfactuals."""
+    ) -> tuple[pd.DataFrame, pd.DataFrame, float, list[float]]:
+        """Get instances without the target column and the true model predictions."""
 
         original_instance = cast(pd.DataFrame, counterfactuals.test_instance_df).drop(
             columns=[self.data.target_name],
@@ -177,9 +177,9 @@ class DiceRegressorExplainer(RegressorExplainer):
         )
 
         original_pred = self.model.predict(original_instance)
-        cf_preds: list[float] = self.model.predict(counterfactual_instances)
+        cf_preds: list[float] = list(self.model.predict(counterfactual_instances))
 
-        return float(original_pred[0]), cf_preds
+        return original_instance, counterfactual_instances, float(original_pred[0]), cf_preds
 
     @staticmethod
     def _filter_kwargs(constructor: Callable[..., Any], all_kwargs: dict[str, Any]) -> dict[str, Any]:
@@ -333,11 +333,11 @@ class DiceClassifierExplainer(ClassifierExplainer):
         counterfactual_list: list[Counterfactual] = []
 
         for cf_group in results.cf_examples_list:
-            original_pred, cf_preds = self._get_true_predictions(cf_group)
+            original_instance, counterfactual_instances, original_pred, cf_preds = self._get_true_predictions(cf_group)
 
             ce = Counterfactual(
-                original_instance=cf_group.test_instance_df,
-                counterfactual_instance=cf_group.final_cfs_df,
+                original_instance=original_instance,
+                counterfactual_instance=counterfactual_instances,
                 original_prediction=original_pred,
                 counterfactual_prediction=cf_preds,
             )
@@ -348,8 +348,8 @@ class DiceClassifierExplainer(ClassifierExplainer):
     def _get_true_predictions(
         self,
         counterfactuals: dice_CounterfactualExamples,
-    ) -> tuple[float, list[float]]:
-        """Get the true model predictions for the original instance and counterfactuals."""
+    ) -> tuple[pd.DataFrame, pd.DataFrame, float, list[float]]:
+        """Get instances without the target column and the true model predictions."""
         original_instance = cast(pd.DataFrame, counterfactuals.test_instance_df).drop(
             columns=[self.data.target_name],
             errors="ignore",
@@ -360,9 +360,9 @@ class DiceClassifierExplainer(ClassifierExplainer):
         )
 
         original_pred = self.model.predict(original_instance)
-        cf_preds: list[float] = self.model.predict(counterfactual_instances)
+        cf_preds: list[float] = list(self.model.predict(counterfactual_instances))
 
-        return float(original_pred[0]), cf_preds
+        return original_instance, counterfactual_instances, float(original_pred[0]), cf_preds
 
     @staticmethod
     def _filter_kwargs(constructor: Callable[..., Any], all_kwargs: dict[str, Any]) -> dict[str, Any]:
