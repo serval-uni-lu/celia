@@ -1,3 +1,3 @@
-from .nnce import NNCERegressorExplainer
+from .nnce import NNCEClassifierExplainer, NNCERegressorExplainer
 
-__all__ = ["NNCERegressorExplainer"]
+__all__ = ["NNCEClassifierExplainer", "NNCERegressorExplainer"]

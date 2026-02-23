@@ -1,3 +1,3 @@
-from .certifai import CertifaiRegressorExplainer
+from .certifai import CertifaiClassifierExplainer, CertifaiRegressorExplainer
 
-__all__ = ["CertifaiRegressorExplainer"]
+__all__ = ["CertifaiClassifierExplainer", "CertifaiRegressorExplainer"]

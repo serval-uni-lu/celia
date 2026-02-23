@@ -112,7 +112,7 @@ class TorchModel(BaseModel):
 
         self._model.eval()
         if isinstance(x, np.ndarray):
-            x = torch.from_numpy(x).float()
+            x = torch.from_numpy(np.array(x, copy=True)).float()
 
         with torch.no_grad():
             outputs = self._model(x)
@@ -129,7 +129,7 @@ class TorchModel(BaseModel):
 
         self._model.eval()
         if isinstance(x, np.ndarray):
-            x = torch.from_numpy(x).float()
+            x = torch.from_numpy(np.array(x, copy=True)).float()
 
         with torch.no_grad():
             outputs = self._model(x)
