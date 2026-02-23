@@ -8,6 +8,7 @@ from celia.errors import MethodError, MethodValueError
 Prediction: TypeAlias = Real | str
 Predictions: TypeAlias = Prediction | list[Real] | list[str]
 
+
 class Counterfactual:
     """
     A class representing counterfactual explanation(s) for a single instance.

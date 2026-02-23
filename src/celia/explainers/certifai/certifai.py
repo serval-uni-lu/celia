@@ -121,7 +121,7 @@ class CertifaiRegressorExplainer(RegressorExplainer):
             target_lower = np.full(shape=(len(sample),), fill_value=target_lower.item())
             target_upper = np.full(shape=(len(sample),), fill_value=target_upper.item())
 
-        if model_type  == "torch":
+        if model_type == "torch":
             self.explainer.fit(
                 self.model.raw_model,
                 x=sample,

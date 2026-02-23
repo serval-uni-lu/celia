@@ -149,7 +149,6 @@ class NoCounterfactualsFoundError(CELIAError):
         super().__init__(message, config=config, param=param, hint=hint, source=source)
 
 
-
 class InstancesAreWithinRangeError(CELIAError):
     """Raised when all provided instances are already within the desired target range. Only applicable for regression tasks."""
 
