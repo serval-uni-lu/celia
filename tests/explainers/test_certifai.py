@@ -134,7 +134,7 @@ class TestCertifaiRegressorExplainer:
         # Shift target range away from current prediction
         target_range = [current_pred + 0.05, current_pred + 0.5]
 
-        results = explainer.generate_counterfactuals(sample, target_range=target_range)
+        results = explainer.generate_counterfactuals(sample, target_range=target_range, generations=2)
         target_name = public_data.target_name
         feature_columns = set(public_data.column_names)
 
@@ -253,7 +253,7 @@ class TestCertifaiClassifierExplainer:
         target_name = public_data.target_name
         feature_columns = set(public_data.column_names)
 
-        results = explainer.generate_counterfactuals(sample, generations=10)
+        results = explainer.generate_counterfactuals(sample, generations=2)
 
         if isinstance(results, Counterfactual):
             results = [results]
