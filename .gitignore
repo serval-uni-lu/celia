@@ -76,6 +76,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
+notebooks
 .ipynb_checkpoints
 
 # IPython
@@ -188,3 +189,6 @@ CLAUDE.md
 .DS_Store
 *.pkl
 *.csv
+
+#Temporaly ignore
+docs
