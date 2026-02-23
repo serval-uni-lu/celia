@@ -280,7 +280,7 @@ class GRACE:
         elif isinstance(original_instance, pd.Series):
             original_tensor = torch.as_tensor(original_instance.to_numpy(), dtype=torch.float32).reshape(1, -1)
         elif isinstance(original_instance, np.ndarray):
-            original_tensor = torch.tensor(original_instance.to_numpy(), dtype=torch.float32)
+            original_tensor = torch.tensor(original_instance, dtype=torch.float32)
         else:
             original_tensor = original_instance  # already Tensor
 
