@@ -13,9 +13,9 @@ from celia.explainers import ClassifierExplainer
 from celia.model import BaseModel, SklearnModel
 
 if TYPE_CHECKING:
+    from ocean import MixedIntegerProgramExplainer as OceanMIPExplainer
     from ocean.abc import Mapper
     from ocean.feature import Feature
-    from ocean import MixedIntegerProgramExplainer as OceanMIPExplainer
 
 
 class OCEANClassifierExplainer(ClassifierExplainer):
@@ -87,8 +87,8 @@ class OCEANClassifierExplainer(ClassifierExplainer):
         *args: object,
         **kwargs: object,
     ) -> OceanMIPExplainer:
-        from ocean.feature import parse_features
         from ocean import MixedIntegerProgramExplainer as OceanMIPExplainer
+        from ocean.feature import parse_features
 
 
         raw_model = model.model
