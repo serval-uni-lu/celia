@@ -10,27 +10,20 @@ requires-python = ">=3.12"
 dependencies = [
     "certifai",
     "dice-ml",
-    "fastjsonschema==2.21.1",
-    "jsonschema==4.23.0",
-    "matplotlib==3.10.1",
-    "notebook>=7.4.2",
-    "oceanpy>=2.0.4",
+    "numpy>=1.26.0",
     "pandas>=2.2.3",
-    "raiutils==0.4.2",
     "scikit-learn>=1.3.2",
-    "seaborn>=0.13.2",
-    "tqdm>=4.67.1",
 ]
 
 [project.optional-dependencies]
 torch = ["torch>=2.8.0"]
-dev = [
-    "category-encoders>=2.7.0",
-    "xgboost>=3.0.1",
-    "pytest>=8.3.5",
-    "torch>=2.8.0",
-    "ruff>=0.14.0",
-    "ty>=0.0.1a22",
+ocean = [
+    "oceanpy>=2.0.4",
+    "gurobipy>=13.0.1",
+]
+all = [
+    "celia[torch]",
+    "celia[ocean]",
 ]
 
 [build-system]
@@ -43,6 +36,12 @@ dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
 
 [dependency-groups]
 dev = [
+    "category-encoders>=2.7.0",
     "furo>=2025.9.25",
+    "pytest>=8.3.5",
+    "ruff>=0.14.0",
     "sphinx>=8.2.3",
+    "torch>=2.8.0",
+    "ty>=0.0.1a22",
+    "xgboost>=3.0.1",
 ]

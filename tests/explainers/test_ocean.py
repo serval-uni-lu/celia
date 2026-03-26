@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 import pandas as pd
@@ -12,6 +13,68 @@ from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers.ocean import OCEANClassifierExplainer
 from celia.model import BaseModel, SklearnModel
 from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_public_data
+
+
+class TestOCEANMissingDependencies:
+    """Verify that missing oceanpy / gurobipy produce a clear ConfigurationError."""
+
+    def _make_minimal_args(self, dummy_classification_dataframe):
+        df = dummy_classification_dataframe
+        X = df.drop(columns=["target"])
+        y = df["target"]
+        rf = RandomForestClassifier(n_estimators=5, random_state=0)
+        rf.fit(X, y)
+        model = SklearnModel(rf)
+        public_data, _ = _make_public_data(df, immutable=[])
+        return model, public_data
+
+    def test_missing_both_raises_configuration_error(self, dummy_classification_dataframe, monkeypatch):
+        """Both oceanpy and gurobipy absent → ConfigurationError listing both."""
+        monkeypatch.setitem(sys.modules, "ocean", None)
+        monkeypatch.setitem(sys.modules, "gurobipy", None)
+
+        model, public_data = self._make_minimal_args(dummy_classification_dataframe)
+
+        with pytest.raises(ConfigurationError) as exc_info:
+            OCEANClassifierExplainer(model=model, data=public_data)
+
+        err = exc_info.value
+        assert err.param == "ocean"
+        assert "OCEANClassifierExplainer" in err.message
+        assert "pip install celia[ocean]" in err.hint
+        assert set(err.config["required_packages"]) == {"oceanpy", "gurobipy"}
+        assert "OCEANClassifierExplainer.__init__" in err.source
+
+    def test_missing_only_ocean_raises_configuration_error(self, dummy_classification_dataframe, monkeypatch):
+        """Only oceanpy absent → ConfigurationError mentioning oceanpy."""
+        monkeypatch.setitem(sys.modules, "ocean", None)
+
+        model, public_data = self._make_minimal_args(dummy_classification_dataframe)
+
+        with pytest.raises(ConfigurationError) as exc_info:
+            OCEANClassifierExplainer(model=model, data=public_data)
+
+        err = exc_info.value
+        assert err.param == "ocean"
+        assert "oceanpy" in err.config["required_packages"]
+        assert "gurobipy" not in err.config["required_packages"]
+
+    def test_missing_only_gurobipy_raises_configuration_error(self, dummy_classification_dataframe, monkeypatch):
+        """Only gurobipy absent → ConfigurationError mentioning gurobipy."""
+        from unittest.mock import MagicMock
+
+        monkeypatch.setitem(sys.modules, "ocean", MagicMock())
+        monkeypatch.setitem(sys.modules, "gurobipy", None)
+
+        model, public_data = self._make_minimal_args(dummy_classification_dataframe)
+
+        with pytest.raises(ConfigurationError) as exc_info:
+            OCEANClassifierExplainer(model=model, data=public_data)
+
+        err = exc_info.value
+        assert err.param == "ocean"
+        assert "gurobipy" in err.config["required_packages"]
+        assert "oceanpy" not in err.config["required_packages"]
 
 
 class TestOCEANClassifier(ClassifierExplainerTests):

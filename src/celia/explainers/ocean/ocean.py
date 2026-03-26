@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pandas as pd
 
+from celia._utils.dependecies import requires_ocean_class
 from celia.counterfactuals import Counterfactual
 from celia.data import PublicData
 from celia.data._base import BaseData
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
     from ocean.feature import Feature
 
 
+@requires_ocean_class
 class OCEANClassifierExplainer(ClassifierExplainer):
     """OCEAN: Optimal Counterfactual Explanations in Tree Ensembles.
 
