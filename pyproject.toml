@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "certifai",
     "dice-ml",
+    "bugdoc",
     "numpy>=1.26.0",
     "pandas>=2.2.3",
     "scikit-learn>=1.3.2",
@@ -33,6 +34,7 @@ build-backend = "hatchling.build"
 [tool.uv.sources]
 certifai = { git = "https://github.com/alanpar97/CERTIFAI.git", rev = "main" }
 dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
+bugdoc = { git = "https://github.com/VIDA-NYU/BugDoc.git", subdirectory = "bugdoc_api", rev = "standalone"}
 
 [dependency-groups]
 dev = [
