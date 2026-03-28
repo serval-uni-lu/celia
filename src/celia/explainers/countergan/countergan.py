@@ -141,6 +141,9 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
 
         cf_array = self.explainer.generate_counterfactuals(x_input)
 
+        if cf_array.size == 0:
+            raise NoCounterfactualsFoundError()
+
         # Restore original column order so original_instance and
         # counterfactual_instance share the same column layout
         col_to_idx = {c: i for i, c in enumerate(self._ordered_columns)}
