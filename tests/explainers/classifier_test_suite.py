@@ -97,7 +97,7 @@ def _make_public_data(
         target_name="target",
         column_names=X.columns.tolist(),
         continuous_column_names=X.select_dtypes(include=["float", "int"]).columns.tolist(),
-        categorical_column_names=X.select_dtypes(include=["object"]).columns.tolist(),
+        categorical_column_names=X.select_dtypes(include=["object", "str"]).columns.tolist(),
         immutable_column_names=immutable if immutable is not None else [],
         feasible_values=feasible_values,
     )

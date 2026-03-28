@@ -16,7 +16,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-torch = ["torch>=2.8.0"]
+torch = [
+    "countergan[torch]",
+    "torch>=2.8.0",
+]
 ocean = [
     "oceanpy>=2.0.4",
     "gurobipy>=13.0.1",
@@ -33,6 +36,7 @@ build-backend = "hatchling.build"
 [tool.uv.sources]
 certifai = { git = "https://github.com/alanpar97/CERTIFAI.git", rev = "main" }
 dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
+countergan = { git = "https://github.com/alanpar97/countergan.git" }
 
 [dependency-groups]
 dev = [
