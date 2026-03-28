@@ -25,7 +25,7 @@ class TestCertifaiRegressorExplainer:
             target_name='target',
             column_names=X.columns.tolist(),
             continuous_column_names=X.select_dtypes(include=['float', 'int']).columns.tolist(),
-            categorical_column_names=X.select_dtypes(include=['object', 'bool']).columns.tolist(),
+            categorical_column_names=X.select_dtypes(include=['object', 'bool', 'str']).columns.tolist(),
             immutable_column_names=['feature1'],
             feasible_values={}
         )
