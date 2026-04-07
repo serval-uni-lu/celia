@@ -35,6 +35,7 @@ from celia.data import PublicData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
 from celia.model import BaseModel, SklearnModel
+from tests.conftest import categorical_select_dtypes
 
 # ---------------------------------------------------------------------------
 # Helper: build feasible-value dict from a dataframe (mirrors conftest helper)
@@ -97,7 +98,7 @@ def _make_public_data(
         target_name="target",
         column_names=X.columns.tolist(),
         continuous_column_names=X.select_dtypes(include=["float", "int"]).columns.tolist(),
-        categorical_column_names=X.select_dtypes(include=["object", "str"]).columns.tolist(),
+        categorical_column_names=X.select_dtypes(include=categorical_select_dtypes(with_bool=False)).columns.tolist(),
         immutable_column_names=immutable if immutable is not None else [],
         feasible_values=feasible_values,
     )
