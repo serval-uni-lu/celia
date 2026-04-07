@@ -8,15 +8,16 @@ Counterfactual explanations are a powerful tool in the field of explainable AI, 
 small changes to input features can lead to different predictions from a model.
 
 ## Methods Implemented
-|   Method Name   |        Reference        | Achieving Method |
-|:---------------:|:-----------------------:|:----------------:|
-|      DiCE       |  Mothilal et al., 2020  |   Optimization   |
-|    CERTIFAI     |   Sharma et al., 2019   |    Heuristic     |
-| Growing Spheres |   Laugel et al., 2018   |   Optimization   |
-|      NNCE       |    Nearest Neighbor     |     Instance     |
-|      GRACE      |     Le at al., 2020     |    Heuristic     |
-|      OCEAN      | Parmentier et al., 2021 |   Optimization   |
-|   CounterGAN    | Nemirovsky et al., 2022 |    Generative    | 
+|   Method Name   |            Reference            | Achieving Method |
+|:---------------:|:-------------------------------:|:----------------:|
+|      DiCE       |      Mothilal et al., 2020      |   Optimization   |
+|    CERTIFAI     |       Sharma et al., 2019       |    Heuristic     |
+| Growing Spheres |       Laugel et al., 2018       |   Optimization   |
+|      NNCE       |        Nearest Neighbor         |     Instance     |
+|      GRACE      |         Le at al., 2020         |    Heuristic     |
+|      OCEAN      |     Parmentier et al., 2021     |   Optimization   |
+|   CounterGAN    |     Nemirovsky et al., 2022     |    Generative    | 
+|      CLEAR      | White and d'Avila Garcez., 2020 |    Heuristic     |
 
 ## Installation
 This package is currently only available via GitHub. To install it, make sure you have **Python 3.12** or later installed.

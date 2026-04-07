@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "certifai",
+    "clear-cf",
     "dice-ml",
     "numpy>=1.26.0",
     "pandas>=2.2.3",
@@ -37,6 +38,7 @@ build-backend = "hatchling.build"
 certifai = { git = "https://github.com/alanpar97/CERTIFAI.git", rev = "main" }
 dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
 countergan = { git = "https://github.com/alanpar97/countergan.git" }
+clear-cf = { git = "https://github.com/alanpar97/clear.git" }
 
 [dependency-groups]
 dev = [
