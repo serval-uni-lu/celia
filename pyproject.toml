@@ -39,6 +39,7 @@ certifai = { git = "https://github.com/alanpar97/CERTIFAI.git", rev = "main" }
 dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
 countergan = { git = "https://github.com/alanpar97/countergan.git" }
 clear-cf = { git = "https://github.com/alanpar97/clear.git" }
+cchvae = { git = "https://github.com/alanpar97/c-chvae.git" }
 
 [dependency-groups]
 dev = [
@@ -50,4 +51,7 @@ dev = [
     "torch>=2.8.0",
     "ty>=0.0.1a22",
     "xgboost>=3.0.1",
+]
+torch = [
+    "cchvae",
 ]
