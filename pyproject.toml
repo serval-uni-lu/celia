@@ -35,7 +35,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-certifai = { git = "https://github.com/alanpar97/CERTIFAI.git", rev = "main" }
+certifai = { git = "https://github.com/alanpar97/CERTIFAI.git" }
 dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
 countergan = { git = "https://github.com/alanpar97/countergan.git" }
 clear-cf = { git = "https://github.com/alanpar97/clear.git" }

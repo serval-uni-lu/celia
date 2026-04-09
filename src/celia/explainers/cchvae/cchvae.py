@@ -14,7 +14,7 @@ from celia.data import PublicData
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
-from celia.model import BaseModel, TorchModel
+from celia.model import BaseModel
 
 
 @requires_torch_class
@@ -30,8 +30,7 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
     that flip the classifier's prediction to a user-specified ``target_class``.
 
     Because C-CHVAE is an amortized, class-conditioned method, ``target_class``
-    must be fixed at construction time. Only ``TorchModel`` is supported as the
-    underlying model backend.
+    must be fixed at construction time.
     """
 
     def __init__(
@@ -41,16 +40,6 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
         *args: object,
         **kwargs: object,
     ) -> None:
-        if not isinstance(model, TorchModel):
-            message = "CCHVAEClassifierExplainer requires a TorchModel wrapping a torch.nn.Module."
-            raise ConfigurationError(
-                message=message,
-                param="model",
-                config={"expected": "TorchModel", "received": type(model).__name__},
-                hint="Wrap your torch.nn.Module with `TorchModel(model=...)`.",
-                source="CCHVAEClassifierExplainer.__init__",
-            )
-
         if not isinstance(data, PublicData):
             message = "CCHVAEClassifierExplainer requires data to be an instance of PublicData."
             raise ConfigurationError(
@@ -90,7 +79,7 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
 
     def _create_explainer(
         self,
-        model: TorchModel,
+        model: BaseModel,
         data: BaseData,
         *args: object,
         **kwargs: object,
