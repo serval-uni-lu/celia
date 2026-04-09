@@ -68,8 +68,8 @@ class GSGClassifierExplainer(ClassifierExplainer):
         self,
         model: BaseModel,
         data: BaseData,
-        *args: object,
-        **kwargs: object,
+        *args,
+        **kwargs,
     ) -> GSG:
         data_public: PublicData = data  # type: ignore[assignment]
 

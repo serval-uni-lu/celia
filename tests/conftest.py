@@ -5,6 +5,25 @@ from sklearn.tree import DecisionTreeClassifier
 from celia.model import SklearnModel
 from celia.data import PublicData
 
+_PANDAS_MAJOR = int(pd.__version__.split(".", 1)[0])
+
+
+def categorical_select_dtypes(*, with_bool: bool = True) -> list[str]:
+    """Return a pandas-version-safe ``include`` list for categorical-like dtypes.
+
+    Pandas 2 raises ``TypeError`` if ``'str'`` appears in
+    ``select_dtypes(include=...)`` because it does not yet have a first-class
+    string dtype — strings live under ``'object'``. Pandas 3 introduces a real
+    string dtype, so ``'object'`` alone no longer catches them and ``'str'``
+    must be passed explicitly.
+    """
+    includes = ["object"]
+    if with_bool:
+        includes.append("bool")
+    if _PANDAS_MAJOR >= 3:
+        includes.append("str")
+    return includes
+
 class ModelWithoutPredict:
     """A dummy model that does not implement the required interface."""
     def __init__(self):
@@ -63,7 +82,7 @@ def dummy_regression_dataframe() -> pd.DataFrame:
 def dummy_regression_dataframe_encoded(dummy_regression_dataframe) -> pd.DataFrame:
     # Simple encoding: Convert categorical columns to category dtype and then to codes
     df_encoded = dummy_regression_dataframe.copy()
-    for col in df_encoded.select_dtypes(include=['object', 'bool']).columns:
+    for col in df_encoded.select_dtypes(include=categorical_select_dtypes()).columns:
         df_encoded[col] = df_encoded[col].astype('category').cat.codes
     return df_encoded
 
@@ -89,7 +108,7 @@ def celia_public_data_without_encoded_data(dummy_regression_dataframe) -> Public
     continuous_column_names: list[str] = (dummy_regression_dataframe.drop(columns=['target'])
                                           .select_dtypes(include=['float', 'int']).columns.to_list())
     categorical_column_names: list[str] = (dummy_regression_dataframe.drop(columns=['target'])
-                                           .select_dtypes(include=['object', 'bool']).columns.to_list())
+                                           .select_dtypes(include=categorical_select_dtypes()).columns.to_list())
     immutable_column_names: list[str] = ['feature1']
     feasible_values : dict = build_feasible_values(dummy_regression_dataframe)
 
@@ -205,7 +224,7 @@ def celia_public_data_classification_with_categories(
         target_name='target',
         column_names=data.columns.tolist(),
         continuous_column_names=data.select_dtypes(include=['float', 'int']).columns.tolist(),
-        categorical_column_names=data.select_dtypes(include=['object']).columns.tolist(),
+        categorical_column_names=data.select_dtypes(include=categorical_select_dtypes(with_bool=False)).columns.tolist(),
         immutable_column_names=['feature1'],
         feasible_values=build_feasible_values(dummy_classification_dataframe_with_categories),
     )

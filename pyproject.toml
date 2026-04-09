@@ -9,6 +9,7 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "certifai",
+    "clear-cf",
     "dice-ml",
     "numpy>=1.26.0",
     "pandas>=2.2.3",
@@ -16,7 +17,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-torch = ["torch>=2.8.0"]
+torch = [
+    "countergan[torch]",
+    "torch>=2.8.0",
+    "cchvae",
+]
 ocean = [
     "oceanpy>=2.0.4",
     "gurobipy>=13.0.1",
@@ -31,8 +36,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-certifai = { git = "https://github.com/alanpar97/CERTIFAI.git", rev = "main" }
+certifai = { git = "https://github.com/alanpar97/CERTIFAI.git" }
 dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
+countergan = { git = "https://github.com/alanpar97/countergan.git" }
+clear-cf = { git = "https://github.com/alanpar97/clear.git" }
+cchvae = { git = "https://github.com/alanpar97/c-chvae.git" }
 
 [dependency-groups]
 dev = [
