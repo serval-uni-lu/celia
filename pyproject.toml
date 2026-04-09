@@ -20,6 +20,7 @@ dependencies = [
 torch = [
     "countergan[torch]",
     "torch>=2.8.0",
+    "cchvae",
 ]
 ocean = [
     "oceanpy>=2.0.4",
@@ -51,7 +52,4 @@ dev = [
     "torch>=2.8.0",
     "ty>=0.0.1a22",
     "xgboost>=3.0.1",
-]
-torch = [
-    "cchvae",
 ]
