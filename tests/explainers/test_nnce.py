@@ -7,6 +7,7 @@ from celia.data import PublicData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import NNCEClassifierExplainer, NNCERegressorExplainer
 from celia.model import SklearnModel
+from tests.conftest import categorical_select_dtypes
 
 
 class TestNNCERegressorExplainer:
@@ -25,7 +26,7 @@ class TestNNCERegressorExplainer:
             target_name='target',
             column_names=X.columns.tolist(),
             continuous_column_names=X.select_dtypes(include=['float', 'int']).columns.tolist(),
-            categorical_column_names=X.select_dtypes(include=['object', 'bool']).columns.tolist(),
+            categorical_column_names=X.select_dtypes(include=categorical_select_dtypes()).columns.tolist(),
             immutable_column_names=['feature1'],
             feasible_values={}
         )

@@ -92,7 +92,6 @@ class OCEANClassifierExplainer(ClassifierExplainer):
         from ocean import MixedIntegerProgramExplainer as OceanMIPExplainer
         from ocean.feature import parse_features
 
-
         raw_model = model.model
         data_public: PublicData = data  # type: ignore[assignment]
 

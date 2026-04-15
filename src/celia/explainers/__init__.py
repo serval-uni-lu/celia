@@ -1,5 +1,6 @@
 from ._base import BaseExplainer, ClassifierExplainer, RegressorExplainer
 from .certifai import CertifaiClassifierExplainer, CertifaiRegressorExplainer
+from .clear import CLEARClassifierExplainer
 from .dice import DiceClassifierExplainer, DiceRegressorExplainer
 from .grace import GRACEClassifierExplainer
 from .growing_spheres import GSGClassifierExplainer
@@ -19,6 +20,7 @@ __all__ = [
     "GSGClassifierExplainer",
     "NNCEClassifierExplainer",
     "NNCERegressorExplainer",
+    "CLEARClassifierExplainer",
     "OCEANClassifierExplainer",
     "BugDocRegressorExplainer",
     "BugDocClassifierExplainer",
