@@ -1,55 +1,10 @@
-import importlib.util
-import os
-import sys
-import types
-
 import pandas as pd
 import pytest
 
 from celia.counterfactuals import Counterfactual
 from celia.errors import NoCounterfactualsFoundError
-
-# Avoid importing the full celia.explainers package and its optional dependencies like certifai.
-sys.modules.setdefault("certifai", types.ModuleType("certifai"))
-setattr(sys.modules["certifai"], "CERTIFAI", types.ModuleType("CERTIFAI"))
-sys.modules.setdefault("matplotlib", types.ModuleType("matplotlib"))
-sys.modules.setdefault("matplotlib.pyplot", types.ModuleType("matplotlib.pyplot"))
-
-repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-if repo_root not in sys.path:
-    sys.path.insert(0, repo_root)
-
-# Create package stubs for celia.explainers and celia.explainers.bugdoc so we can load the module file directly.
-if "celia" not in sys.modules:
-    sys.modules["celia"] = types.ModuleType("celia")
-
-explainer_pkg = types.ModuleType("celia.explainers")
-explainer_pkg.__path__ = [os.path.join(repo_root, "src", "celia", "explainers")]
-sys.modules["celia.explainers"] = explainer_pkg
-
-bugdoc_pkg = types.ModuleType("celia.explainers.bugdoc")
-bugdoc_pkg.__path__ = [os.path.join(repo_root, "src", "celia", "explainers", "bugdoc")]
-sys.modules["celia.explainers.bugdoc"] = bugdoc_pkg
-setattr(explainer_pkg, "bugdoc", bugdoc_pkg)
-
-base_path = os.path.join(repo_root, "src", "celia", "explainers", "_base.py")
-base_spec = importlib.util.spec_from_file_location("celia.explainers._base", base_path)
-base_module = importlib.util.module_from_spec(base_spec)
-sys.modules["celia.explainers._base"] = base_module
-base_spec.loader.exec_module(base_module)
-
-setattr(explainer_pkg, "RegressorExplainer", base_module.RegressorExplainer)
-setattr(explainer_pkg, "ClassifierExplainer", base_module.ClassifierExplainer)
-
-bugdoc_path = os.path.join(repo_root, "src", "celia", "explainers", "bugdoc", "bugdoc.py")
-bugdoc_spec = importlib.util.spec_from_file_location("celia.explainers.bugdoc.bugdoc", bugdoc_path)
-bugdoc_module = importlib.util.module_from_spec(bugdoc_spec)
-sys.modules["celia.explainers.bugdoc.bugdoc"] = bugdoc_module
-bugdoc_spec.loader.exec_module(bugdoc_module)
-
-bugdoc_module = bugdoc_module
-BugDocClassifierExplainer = bugdoc_module.BugDocClassifierExplainer
-BugDocRegressorExplainer = bugdoc_module.BugDocRegressorExplainer
+from celia.explainers.bugdoc import BugDocClassifierExplainer, BugDocRegressorExplainer
+from celia.explainers.bugdoc import bugdoc as bugdoc_module
 
 
 class DummyStackedShortcut:
