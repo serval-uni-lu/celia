@@ -98,7 +98,7 @@ sklearn_model = SklearnModel(model)
 ### 3. Generate counterfactuals
 
 ```python
-from celia.explainers import DiceClassifierExplainer, GSGClassifierExplainer, NNCEClassifierExplainer
+from celia.explainers import DiceClassifierExplainer, GSGClassifierExplainer, NNCEClassifierExplainer, BugDocClassifierExplainer
 
 # Pick an instance to explain
 sample = X_test.iloc[[0]]
@@ -114,6 +114,10 @@ gsg_cf = gsg.generate_counterfactuals(sample)
 # NNCE — nearest real training examples with a different prediction
 nnce = NNCEClassifierExplainer(model=sklearn_model, data=public_data)
 nnce_cf = nnce.generate_counterfactuals(sample, n_counterfactuals=3)
+
+# BugDoc — debug-style logical rule counterfactuals
+bugdoc = BugDocClassifierExplainer(model=sklearn_model, data=public_data)
+bugdoc_cf = bugdoc.generate_counterfactuals(sample)
 ```
 
 ### 4. Inspect results
