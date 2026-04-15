@@ -8,6 +8,7 @@ from bugdoc.utils.quine_mccluskey import prune_tree
 import numpy as np
 import pandas as pd
 from celia.counterfactuals import Counterfactual
+from celia.errors import NoCounterfactualsFoundError
 from celia.explainers import RegressorExplainer
 from celia.data import PublicData
 
@@ -124,7 +125,10 @@ class BugDocRegressorExplainer(RegressorExplainer):
                                                 original_prediction=original_instance[self.data.target_name].iloc[0],
                                                 counterfactual_prediction=counterfactual_df[self.data.target_name].iloc[0])
                 counterfactuals.append(counterfactual)
-
+        if len(counterfactuals) == 0:
+            logging.warning("No counterfactuals found for the given sample.")
+            message = "No counterfactuals generated. Check the input parameters and data."
+            raise NoCounterfactualsFoundError(message)
         return counterfactuals[0] if len(counterfactuals) == 1 else counterfactuals
 
 
@@ -237,4 +241,8 @@ class BugDocClassifierExplainer(ClassifierExplainer):
                                                 counterfactual_prediction=counterfactual_df[self.data.target_name].iloc[0])
                 counterfactuals.append(counterfactual)
 
+        if len(counterfactuals) == 0:
+            logging.warning("No counterfactuals found for the given sample.")
+            message = "No counterfactuals generated. Check the input parameters and data."
+            raise NoCounterfactualsFoundError(message)
         return counterfactuals[0] if len(counterfactuals) == 1 else counterfactuals
