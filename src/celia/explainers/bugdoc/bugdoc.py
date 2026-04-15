@@ -1,20 +1,19 @@
 import logging
-from typing import Union, List, Tuple
-from bugdoc.algos.stacked_shortcut_standalone import StackedShortcutStandalone as StackedShortcut
-from bugdoc.algos.debugging_decision_trees import DebuggingDecisionTrees
-import bugdoc.utils.tree as _tree
-from bugdoc.utils.quine_mccluskey import prune_tree
+from typing import Dict, List, Tuple, Union
 
+import bugdoc.utils.tree as _tree
 import numpy as np
 import pandas as pd
+from bugdoc.algos.debugging_decision_trees import DebuggingDecisionTrees
+from bugdoc.algos.stacked_shortcut_standalone import StackedShortcutStandalone as StackedShortcut
+from bugdoc.utils.quine_mccluskey import prune_tree
+
 from celia.counterfactuals import Counterfactual
+from celia.data import PublicData
 from celia.errors import NoCounterfactualsFoundError
 from celia.explainers import RegressorExplainer
-from celia.data import PublicData
-
 from celia.explainers._base import ClassifierExplainer
 from celia.model import BaseModel
-
 
 
 class BugDocRegressorExplainer(RegressorExplainer):
@@ -55,10 +54,11 @@ class BugDocRegressorExplainer(RegressorExplainer):
     def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
         # Assert that data is an instance of PublicData
         if not isinstance(data, PublicData):
-            raise ValueError("data must be an instance of PublicData")
+            message = "data must be an instance of PublicData"
+            raise ValueError(message)
         super().__init__(model, data, *args, **kwargs)
 
-    def _create_explainer(self, model:BaseModel, data:PublicData, *args, **kwargs):
+    def _create_explainer(self, model: BaseModel, data: PublicData, *args, **kwargs) -> RegressorExplainer:
         self.budget = kwargs.pop("budget", 100)
         return self
 
@@ -73,15 +73,22 @@ class BugDocRegressorExplainer(RegressorExplainer):
         
         
 
-        sample_dict = {col: self.data.data[col].unique().tolist() if isinstance(self.data.data[col], (pd.Series, np.ndarray)) else [self.data.data[col]] for col in list(self.data.column_names)}
+        sample_dict = {
+            col: self.data.data[col].unique().tolist()
+            if isinstance(self.data.data[col], (pd.Series, np.ndarray))
+            else [self.data.data[col]]
+            for col in list(self.data.column_names)
+        }
 
-        def model_predict(input_dict):
+        def model_predict(input_dict: Dict[str, list[object]]) -> bool:
             input_df = pd.DataFrame([input_dict])
-            return  (self.model.predict(input_df)[0] <  target_range[0]) or (target_range[1] < self.model.predict(input_df)[0])
+            return (
+                self.model.predict(input_df)[0] < target_range[0]
+                or target_range[1] < self.model.predict(input_df)[0]
+            )
 
-        
         counterfactuals = []
-        for i,row in sample.iterrows():
+        for _, row in sample.iterrows():
             row_dict = row.to_dict()
             row_dict[self.data.target_name] = self.model.predict(row.to_frame().T)[0]
             original_instance=pd.DataFrame([row_dict])
@@ -173,10 +180,11 @@ class BugDocClassifierExplainer(ClassifierExplainer):
     def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
         # Assert that data is an instance of PublicData
         if not isinstance(data, PublicData):
-            raise ValueError("data must be an instance of PublicData")
+            message = "data must be an instance of PublicData"
+            raise ValueError(message)
         super().__init__(model, data, *args, **kwargs)
 
-    def _create_explainer(self, model:BaseModel, data:PublicData, *args, **kwargs):
+    def _create_explainer(self, model: BaseModel, data: PublicData, *args, **kwargs) -> ClassifierExplainer:
         self.budget = kwargs.pop("budget", 100)
         return self
     
@@ -188,16 +196,21 @@ class BugDocClassifierExplainer(ClassifierExplainer):
         origin = kwargs.get('origin', "debug")
         
         
-        sample_dict = {col: self.data.data[col].unique().tolist() if isinstance(self.data.data[col], (pd.Series, np.ndarray)) else [self.data.data[col]] for col in list(self.data.column_names)}
+        sample_dict = {
+            col: self.data.data[col].unique().tolist()
+            if isinstance(self.data.data[col], (pd.Series, np.ndarray))
+            else [self.data.data[col]]
+            for col in list(self.data.column_names)
+        }
         
         counterfactuals = []
-        for i,row in sample.iterrows():
+        for _, row in sample.iterrows():
             row_dict = row.to_dict()
             row_dict[self.data.target_name] = self.model.predict(row.to_frame().T)[0]
 
-            def model_predict(input_dict):
+            def model_predict(input_dict: Dict[str, list[object]]) -> bool:
                 input_df = pd.DataFrame([input_dict])
-                return  self.model.predict(input_df)[0] == row_dict[self.data.target_name]
+                return self.model.predict(input_df)[0] == row_dict[self.data.target_name]
             
             original_instance=pd.DataFrame([row_dict])
             input_dict = {col: [row[col]] if col in self.data.immutable_column_names else sample_dict[col] for col in list(self.data.column_names)}

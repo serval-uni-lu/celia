@@ -1,3 +1,3 @@
-from .bugdoc import BugDocRegressorExplainer, BugDocClassifierExplainer
+from .bugdoc import BugDocClassifierExplainer, BugDocRegressorExplainer
 
-__all__ = ["BugDocRegressorExplainer", "BugDocClassifierExplainer"]
+__all__ = ["BugDocClassifierExplainer", "BugDocRegressorExplainer"]
