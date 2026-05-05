@@ -18,7 +18,9 @@ small changes to input features can lead to different predictions from a model.
 |      OCEAN      |     Parmentier et al., 2021     |   Optimization   |
 |   CounterGAN    |     Nemirovsky et al., 2022     |    Generative    | 
 |      CLEAR      | White and d'Avila Garcez., 2020 |    Heuristic     |
-|    C-CHVAE      |     Pawelczyk et al., 2020      |   Generative     |
+|     C-CHVAE     |     Pawelczyk et al., 2020      |    Generative    |
+|     BugDoc      |      Lourenco et al., 2020      |    Heuristic     |
+|     FastAR      |       Verma et al., 2020        |    Stochastic    |
 
 ## Installation
 This package is currently only available via GitHub. To install it, make sure you have **Python 3.12** or later installed.
@@ -98,7 +100,7 @@ sklearn_model = SklearnModel(model)
 ### 3. Generate counterfactuals
 
 ```python
-from celia.explainers import DiceClassifierExplainer, GSGClassifierExplainer, NNCEClassifierExplainer
+from celia.explainers import DiceClassifierExplainer, GSGClassifierExplainer, NNCEClassifierExplainer, BugDocClassifierExplainer
 
 # Pick an instance to explain
 sample = X_test.iloc[[0]]
@@ -114,6 +116,10 @@ gsg_cf = gsg.generate_counterfactuals(sample)
 # NNCE — nearest real training examples with a different prediction
 nnce = NNCEClassifierExplainer(model=sklearn_model, data=public_data)
 nnce_cf = nnce.generate_counterfactuals(sample, n_counterfactuals=3)
+
+# BugDoc — debug-style logical rule counterfactuals
+bugdoc = BugDocClassifierExplainer(model=sklearn_model, data=public_data)
+bugdoc_cf = bugdoc.generate_counterfactuals(sample)
 ```
 
 ### 4. Inspect results

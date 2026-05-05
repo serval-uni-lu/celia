@@ -40,6 +40,14 @@ class DummyData(BaseData):
     def feasible_values(self) -> dict:
         return self._feasible_values
 
+    @property
+    def monotonic_increasing_column_names(self) -> list[str]:
+        return []
+
+    @property
+    def correlated_features(self) -> list[tuple[str, str, float]]:
+        return []
+
     def _validate_inputs(self, *args, **kwargs):
         return True  # For testing only
 
