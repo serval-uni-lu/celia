@@ -63,6 +63,8 @@ def create_public_data_with_overrides(
         categorical_column_names=overrides.get("categorical_column_names", ["gender", "employed"]),
         immutable_column_names=overrides.get("immutable_column_names", ["age"]),
         feasible_values=overrides.get("feasible_values", valid_feasible_values),
+        monotonic_increasing_column_names=overrides.get("monotonic_increasing_column_names", None),
+        correlated_features=overrides.get("correlated_features", None),
     )
 
 class TestPublicData:
@@ -330,6 +332,8 @@ class TestPublicData:
             ("categorical_column_names", False),
             ("immutable_column_names", False),
             ("feasible_values", False),
+            ("monotonic_increasing_column_names", False),
+            ("correlated_features", False),
         ],
     )
     def test_missing_parameters_behavior(
@@ -345,6 +349,8 @@ class TestPublicData:
             "categorical_column_names": ["gender", "employed"],
             "immutable_column_names": ["age"],
             "feasible_values": valid_feasible_values,
+            "monotonic_increasing_column_names": None,
+            "correlated_features": None,
         }
 
         kwargs.pop(missing_param)
@@ -357,3 +363,178 @@ class TestPublicData:
                 PublicData(**kwargs)
             except Exception as e:
                 pytest.fail(f"Unexpected exception for missing optional param '{missing_param}': {e}")
+
+    # --- monotonic_increasing_column_names tests ---
+
+    def test_invalid_monotonic_increasing_type(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if monotonic_increasing_column_names is not a list or None."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                monotonic_increasing_column_names="age"
+            )
+
+        err = exc_info.value
+        assert err.param == "monotonic_increasing_column_names"
+        assert "must be a list of strings" in err.message
+
+    def test_missing_monotonic_increasing_feature_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if a monotonic_increasing feature is not in data."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                monotonic_increasing_column_names=["nonexistent_feature"]
+            )
+
+        err = exc_info.value
+        assert err.param == "monotonic_increasing"
+        assert "not in the dataset" in err.message
+        assert "nonexistent_feature" in err.config["missing_features"]
+
+    def test_monotonic_immutable_overlap_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if a feature is both monotonic_increasing and immutable."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                immutable_column_names=["age"],
+                monotonic_increasing_column_names=["age"]
+            )
+
+        err = exc_info.value
+        assert err.param == "monotonic_increasing_column_names"
+        assert "both monotonic_increasing and immutable" in err.message
+        assert "age" in err.config["overlap"]
+
+    def test_monotonic_must_be_continuous_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if a monotonic feature is not in continuous_column_names."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                continuous_column_names=["income"],
+                immutable_column_names=[],
+                monotonic_increasing_column_names=["age"]
+            )
+
+        err = exc_info.value
+        assert err.param == "monotonic_increasing_column_names"
+        assert "must be continuous" in err.message
+        assert "age" in err.config["not_continuous"]
+
+    def test_valid_monotonic_increasing_passes(self, dummy_dataframe, valid_feasible_values):
+        """Ensure valid monotonic_increasing_column_names is accepted."""
+        data = create_public_data_with_overrides(
+            dummy_dataframe, valid_feasible_values,
+            immutable_column_names=[],
+            monotonic_increasing_column_names=["age"]
+        )
+        assert data.monotonic_increasing_column_names == ["age"]
+
+    def test_monotonic_increasing_none_passes(self, dummy_dataframe, valid_feasible_values):
+        """Ensure None is accepted for monotonic_increasing_column_names."""
+        data = create_public_data_with_overrides(
+            dummy_dataframe, valid_feasible_values,
+            monotonic_increasing_column_names=None
+        )
+        assert data.monotonic_increasing_column_names is None
+
+    # --- correlated_features tests ---
+
+    def test_invalid_correlated_features_type(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if correlated_features is not a list or None."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                correlated_features="invalid"
+            )
+
+        err = exc_info.value
+        assert err.param == "correlated_features"
+        assert "must be a list" in err.message
+
+    def test_correlated_invalid_tuple_length_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if a correlated entry is not a 3-tuple."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                correlated_features=[("age", "income")]
+            )
+
+        err = exc_info.value
+        assert err.param == "correlated_features"
+        assert "(cause, effect, delta) tuple" in err.message
+
+    def test_correlated_non_numeric_delta_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if delta is not numeric."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                correlated_features=[("age", "income", "not_a_number")]
+            )
+
+        err = exc_info.value
+        assert err.param == "correlated_features"
+        assert "delta must be numeric" in err.message
+
+    def test_correlated_same_cause_effect_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if cause and effect are the same column."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                correlated_features=[("age", "age", 0.05)]
+            )
+
+        err = exc_info.value
+        assert err.param == "correlated_features"
+        assert "must be different columns" in err.message
+
+    def test_correlated_unknown_cause_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if cause column does not exist in data."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                correlated_features=[("nonexistent", "income", 0.05)]
+            )
+
+        err = exc_info.value
+        assert err.param == "correlated_features"
+        assert "cause" in err.message
+        assert "not in the dataset" in err.message
+
+    def test_correlated_unknown_effect_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError if effect column does not exist in data."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_public_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                correlated_features=[("age", "nonexistent", 0.05)]
+            )
+
+        err = exc_info.value
+        assert err.param == "correlated_features"
+        assert "effect" in err.message
+        assert "not in the dataset" in err.message
+
+    def test_valid_correlated_features_passes(self, dummy_dataframe, valid_feasible_values):
+        """Ensure valid correlated_features is accepted."""
+        correlated = [("age", "income", 0.05)]
+        data = create_public_data_with_overrides(
+            dummy_dataframe, valid_feasible_values,
+            correlated_features=correlated
+        )
+        assert data.correlated_features == [("age", "income", 0.05)]
+
+    def test_correlated_features_none_passes(self, dummy_dataframe, valid_feasible_values):
+        """Ensure None is accepted for correlated_features."""
+        data = create_public_data_with_overrides(
+            dummy_dataframe, valid_feasible_values,
+            correlated_features=None
+        )
+        assert data.correlated_features is None
+
+    def test_correlated_multiple_effects_per_cause(self, dummy_dataframe, valid_feasible_values):
+        """Ensure a cause can have multiple effects."""
+        correlated = [("age", "income", 0.05), ("age", "gender", 0.1)]
+        data = create_public_data_with_overrides(
+            dummy_dataframe, valid_feasible_values,
+            correlated_features=correlated
+        )
+        assert len(data.correlated_features) == 2
