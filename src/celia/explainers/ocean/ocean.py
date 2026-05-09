@@ -231,7 +231,7 @@ class OCEANClassifierExplainer(ClassifierExplainer):
         current_prediction = int(self.model.predict(row.to_frame().T).item())
         y = self._determine_target_class(current_prediction) if target_class is None else int(target_class)
 
-        self.explainer._output_values = None # ensure vget returns real gp.Var, important for oceanpy>=2.0.7
+        self.explainer._output_values = None  # ensure vget returns real gp.Var, important for oceanpy>=2.0.7
         custom_constrs = self._add_custom_constraints(x_ocean)
 
         try:
