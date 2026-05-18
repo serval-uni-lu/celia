@@ -127,8 +127,14 @@ class CLEARClassifierExplainer(ClassifierExplainer):
         if class_labels is None:
             class_labels = {i: str(i) for i in range(num_classes)}
         self._class_labels: dict[int, str] = class_labels
-        self._categorical_features: list[str] = kwargs.get("categorical_features") or []
-        self._continuous_features: list[str] | None = kwargs.get("continuous_features")
+
+        self._categorical_features: list[str] = (
+                kwargs.get("categorical_features") or self._infer_ohe_prefixes(data)
+        )
+        self._continuous_features: list[str] | None = (
+                kwargs.get("continuous_features")
+                or (list(data.continuous_column_names) if data.continuous_column_names else None)
+        )
 
         super().__init__(model, data, *args, **kwargs)
 
@@ -231,3 +237,46 @@ class CLEARClassifierExplainer(ClassifierExplainer):
             )
 
         return celia_results[0] if is_single else celia_results
+
+    @staticmethod
+    def _infer_ohe_prefixes(data: PublicData) -> list[str]:
+        """Recover OHE group prefixes from expanded categorical column names.
+
+        OHE columns follow the ``{prefix}_{value}`` convention.  Columns from
+        the same original feature are lexicographically adjacent when sorted,
+        so we sort and group by longest common prefix trimmed to the last ``_``.
+        """
+        if not data.categorical_column_names:
+            return []
+
+        sorted_cols = sorted(data.categorical_column_names)
+        prefixes: list[str] = []
+        i = 0
+
+        while i < len(sorted_cols):
+            col = sorted_cols[i]
+            if i + 1 < len(sorted_cols):
+                # Find character-level common prefix with the next column
+                common_len = 0
+                for a, b in zip(col, sorted_cols[i + 1]):
+                    if a != b:
+                        break
+                    common_len += 1
+                sep = col[:common_len].rfind("_")
+                if sep > 0:
+                    prefix = col[:sep]
+                    pfx = prefix + "_"
+                    j = i
+                    while j < len(sorted_cols) and sorted_cols[j].startswith(pfx):
+                        j += 1
+                    if j - i >= 2:
+                        prefixes.append(prefix)
+                        i = j
+                        continue
+
+            # Single-column group fallback
+            sep = col.rfind("_")
+            prefixes.append(col[:sep] if sep > 0 else col)
+            i += 1
+
+        return prefixes
