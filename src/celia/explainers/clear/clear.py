@@ -128,12 +128,9 @@ class CLEARClassifierExplainer(ClassifierExplainer):
             class_labels = {i: str(i) for i in range(num_classes)}
         self._class_labels: dict[int, str] = class_labels
 
-        self._categorical_features: list[str] = (
-                kwargs.get("categorical_features") or self._infer_ohe_prefixes(data)
-        )
-        self._continuous_features: list[str] | None = (
-                kwargs.get("continuous_features")
-                or (list(data.continuous_column_names) if data.continuous_column_names else None)
+        self._categorical_features: list[str] = kwargs.get("categorical_features") or self._infer_ohe_prefixes(data)
+        self._continuous_features: list[str] | None = kwargs.get("continuous_features") or (
+            list(data.continuous_column_names) if data.continuous_column_names else None
         )
 
         super().__init__(model, data, *args, **kwargs)

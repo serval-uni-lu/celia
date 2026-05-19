@@ -73,8 +73,9 @@ class GSG:
         self.max_shrink_iterations = max_shrink_iterations
         self.rng = np.random.default_rng(seed)
 
-        self.mutable_continuous: list[str] = list(set(mutable_features) - set(binary_features))
-        self.mutable_binary: list[str] = list(set(mutable_features) - set(continuous_features))
+        binary_set = set(binary_features)
+        self.mutable_continuous: list[str] = [f for f in mutable_features if f not in binary_set]
+        self.mutable_binary: list[str] = [f for f in mutable_features if f in binary_set]
 
     def _sample_hypersphere(
         self,
