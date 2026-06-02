@@ -1,8 +1,8 @@
+from typing import Dict, Any
+
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import pytorch_lightning as pl
-from typing import Dict, Any
 
 from celia._utils.dependecies import requires_torch_class
 
@@ -16,7 +16,7 @@ class LinearBlock(nn.Module):
             nn.Dropout(dropout),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         return self.block(x)
 
 class MultilayerPerception(nn.Module):
@@ -28,7 +28,7 @@ class MultilayerPerception(nn.Module):
             layers.append(LinearBlock(dims[i-1], dims[i], dropout=dropout))
         self.model = nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         return self.model(x)
 
 
@@ -122,6 +122,7 @@ class CounterNet(pl.LightningModule):
         # exp_input_dim = exp_dims[0] + dec_dims[-1]
         # adjusted_exp_dims = [exp_input_dim] + exp_dims[1:]
         exp_dims = [x for x in exp_dims]
+        exp_dims = list(exp_dims)
         exp_dims[0] = exp_dims[0] + dec_dims[-1]
         
         self.explainer = nn.Sequential(
@@ -130,9 +131,9 @@ class CounterNet(pl.LightningModule):
         )
 
         # Initialize the normalizer
-        self.normalizer = CategoricalNormalizer(valid_values_dict,)
+        self.normalizer = CategoricalNormalizer(valid_values_dict)
 
-    def forward(self, x, hard: bool = False):
+    def forward(self, x: torch.Tensor, hard: bool = False):
         encoded_x = self.encoder_model(x)
         pred_hidden = self.predictor(encoded_x)
         y_logits = self.pred_linear(pred_hidden)
@@ -146,14 +147,14 @@ class CounterNet(pl.LightningModule):
         
         return torch.squeeze(y_hat, dim=-1), c_normalized
 
-    def _loss_functions(self, x, c, y, y_hat):
+    def _loss_functions(self, x: torch.Tensor, c: torch.Tensor, y: torch.Tensor, y_hat: torch.Tensor):
         """Calculates the three distinct losses."""
         # 1. Prediction Loss (Binary Cross Entropy)
-        # l_1 = F.binary_cross_entropy(y_hat, y.float())
-        l_1 = F.mse_loss(y_hat, y.float())
+        # l_1 = nn.functional.binary_cross_entropy(y_hat, y.float())
+        l_1 = nn.functional.mse_loss(y_hat, y.float())
         
         # 2. Proximity/Cost Loss (Mean Squared Error between original and CF)
-        l_2 = F.mse_loss(x, c)
+        l_2 = nn.functional.mse_loss(x, c)
         
         # 3. Validity Loss
         # What does the model predict for the generated counterfactual?
@@ -161,8 +162,8 @@ class CounterNet(pl.LightningModule):
         
         # The target for validity is the exact opposite of what the model originally predicted
         y_prime = 1.0 - torch.round(y_hat.detach())
-        # l_3 = F.binary_cross_entropy(c_y_hat, y_prime)
-        l_3 = F.mse_loss(c_y_hat, y_prime)
+        # l_3 = nn.functional.binary_cross_entropy(c_y_hat, y_prime)
+        l_3 = nn.functional.mse_loss(c_y_hat, y_prime)
         
         return l_1, l_2, l_3
 
