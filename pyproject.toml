@@ -37,6 +37,7 @@ ocean = [
 all = [
     "celia[torch]",
     "celia[ocean]",
+    "celia[stochastic]",
 ]
 stochastic = [
     "fastar",
