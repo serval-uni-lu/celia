@@ -5,7 +5,6 @@ import pandas as pd
 import pytest
 
 from celia.errors import ConfigurationError
-# Update this import path to match where you saved the explainer
 from celia.explainers.counternet import CounterNetClassifierExplainer 
 from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_public_data
 
@@ -18,16 +17,16 @@ class TestCounterNetClassifier(ClassifierExplainerTests):
     generate_kwargs = {}
 
     # CounterNet Capabilities
-    supports_sklearn = False
+    supports_sklearn = True
     supports_torch = True
-    rejects_sklearn = True
+    rejects_sklearn = False
     rejects_torch = False
     supports_immutable_features = False # CounterNet does not natively freeze features without loss modifications
     supports_feasible_values = False
-    supports_categorical_features = True # Thanks to our CategoricalNormalizer!
+    supports_categorical_features = False
     requires_encoded_data = True
 
-    def test_encoded_data_required(self, dummy_classification_dataframe, torch_classification_model):
+    def test_encoded_data_required(self, model_trained_classifier_stratified, dummy_classification_dataframe):
         """ConfigurationError when sample contains non-numeric columns during generation.
 
         CounterNet requires the inputs to be purely numerical (including Label/CatBoost encoded categories) 
@@ -36,7 +35,7 @@ class TestCounterNetClassifier(ClassifierExplainerTests):
         public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
 
         explainer = CounterNetClassifierExplainer(
-            model=torch_classification_model,
+            model=model_trained_classifier_stratified,
             data=public_data,
             epochs=1
         )
@@ -49,25 +48,20 @@ class TestCounterNetClassifier(ClassifierExplainerTests):
 
         assert exc_info.value.source == "CounterNetExplainer._validate_sample"
 
-    def test_pytorch_model_required_raises_error(self, dummy_classification_dataframe):
-        """ConfigurationError(param='model') when initialized with a non-TorchModel."""
-        from celia.model import BaseModel # Or whatever dummy mock you use for non-torch models
-        
-        class DummyNonTorchModel(BaseModel):
-            def predict(self, X): return np.zeros(len(X))
-            def predict_proba(self, X): return np.zeros((len(X), 2))
-            
-        dummy_model = DummyNonTorchModel()
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+    def test_non_numeric_data_raises_error_at_init(
+        self, dummy_classification_dataframe_with_categories, torch_classification_model
+    ):
+        """ConfigurationError(param='data') when data contains non-numeric columns at init."""
+        public_data, _ = _make_public_data(dummy_classification_dataframe_with_categories, immutable=[])
 
         with pytest.raises(ConfigurationError) as exc_info:
-            CounterNetClassifierExplainer(
-                model=dummy_model,
+            CounterGANClassifierExplainer(
+                model=torch_classification_model,
                 data=public_data,
+                desired_class=1,
             )
 
-        assert exc_info.value.param == "model"
-        assert "expected" in exc_info.value.config
+        assert exc_info.value.param == "data"
 
     def test_public_data_required_raises_error(self, torch_classification_model):
         """ConfigurationError(param='data') when initialized without PublicData."""
