@@ -19,11 +19,11 @@ def requires_ocean_class(cls: T) -> T:
     def new_init(self: Any, *args: object, **kwargs: object) -> None:
         missing = []
         try:
-            import ocean  # noqa: F401
+            import ocean  # noqa: F401  # ty: ignore[unresolved-import]
         except ImportError:
             missing.append("oceanpy")
         try:
-            import gurobipy  # noqa: F401
+            import gurobipy  # noqa: F401  # ty: ignore[unresolved-import]
         except ImportError:
             missing.append("gurobipy")
 
