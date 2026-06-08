@@ -52,6 +52,7 @@ class BugDocRegressorExplainer(RegressorExplainer):
     data : PublicData
         The dataset used to generate counterfactual explanations.
     """
+
     def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
         # Assert that data is an instance of PublicData
         if not isinstance(data, PublicData):
@@ -63,16 +64,16 @@ class BugDocRegressorExplainer(RegressorExplainer):
         self.budget = kwargs.pop("budget", 100)
         return self
 
-
-    def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
-                                  target_range: Union[List[float], Tuple[float, float]],
-                                  *args, **kwargs) -> pd.DataFrame:
-        
-         # Check if user provided any additional parameters
-        separator = kwargs.get('separator', "#")
-        origin = kwargs.get('origin', "debug")
-        
-        
+    def _generate_counterfactuals(
+        self,
+        sample: Union[pd.DataFrame, pd.Series],
+        target_range: Union[List[float], Tuple[float, float]],
+        *args,
+        **kwargs,
+    ) -> pd.DataFrame:
+        # Check if user provided any additional parameters
+        separator = kwargs.get("separator", "#")
+        origin = kwargs.get("origin", "debug")
 
         sample_dict = {
             col: self.data.data[col].unique().tolist()
@@ -84,8 +85,7 @@ class BugDocRegressorExplainer(RegressorExplainer):
         def model_predict(input_dict: Dict[str, list[object]]) -> bool:
             input_df = pd.DataFrame([input_dict])
             return (
-                self.model.predict(input_df)[0] < target_range[0]
-                or target_range[1] < self.model.predict(input_df)[0]
+                self.model.predict(input_df)[0] < target_range[0] or target_range[1] < self.model.predict(input_df)[0]
             )
 
         counterfactuals = []
@@ -132,24 +132,28 @@ class BugDocRegressorExplainer(RegressorExplainer):
                 for clause in res:
                     if " == " in clause:
                         feature, value = clause.split(" == ")
-                        row_dict[feature] = [v for v in input_dict[feature] if v == value] [0]
+                        row_dict[feature] = [v for v in input_dict[feature] if v == value][0]
                     elif " != " in clause:
                         feature, value = clause.split(" != ")
-                        row_dict[feature] = [v for v in input_dict[feature] if v != value] [0]
+                        row_dict[feature] = [v for v in input_dict[feature] if v != value][0]
                     elif " < " in clause:
                         feature, value = clause.split(" < ")
-                        row_dict[feature] = [v for v in input_dict[feature] if v < float(value)] [0]
+                        row_dict[feature] = [v for v in input_dict[feature] if v < float(value)][0]
                     elif " >= " in clause:
                         feature, value = clause.split(" >= ")
-                        row_dict[feature] = [v for v in input_dict[feature] if v >= float(value)] [0]
-   
-                row_dict[self.data.target_name] = self.model.predict(pd.DataFrame([row_dict])[list(self.data.column_names)])[0]
+                        row_dict[feature] = [v for v in input_dict[feature] if v >= float(value)][0]
+
+                row_dict[self.data.target_name] = self.model.predict(
+                    pd.DataFrame([row_dict])[list(self.data.column_names)]
+                )[0]
                 counterfactual_df = pd.DataFrame([row_dict])
-                
-                counterfactual = Counterfactual(original_instance=original_instance.drop(columns=[self.data.target_name]),
-                                                counterfactual_instance=counterfactual_df.drop(columns=[self.data.target_name]),
-                                                original_prediction=original_instance[self.data.target_name].iloc[0],
-                                                counterfactual_prediction=counterfactual_df[self.data.target_name].iloc[0])
+
+                counterfactual = Counterfactual(
+                    original_instance=original_instance.drop(columns=[self.data.target_name]),
+                    counterfactual_instance=counterfactual_df.drop(columns=[self.data.target_name]),
+                    original_prediction=original_instance[self.data.target_name].iloc[0],
+                    counterfactual_prediction=counterfactual_df[self.data.target_name].iloc[0],
+                )
                 counterfactuals.append(counterfactual)
         if len(counterfactuals) == 0:
             logging.warning("No counterfactuals found for the given sample.")
@@ -206,22 +210,19 @@ class BugDocClassifierExplainer(ClassifierExplainer):
     def _create_explainer(self, model: BaseModel, data: PublicData, *args, **kwargs) -> ClassifierExplainer:
         self.budget = kwargs.pop("budget", 100)
         return self
-    
-    def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series],
-                                  *args, **kwargs) -> pd.DataFrame:
-        
-         # Check if user provided any additional parameters
-        separator = kwargs.get('separator', "#")
-        origin = kwargs.get('origin', "debug")
-        
-        
+
+    def _generate_counterfactuals(self, sample: Union[pd.DataFrame, pd.Series], *args, **kwargs) -> pd.DataFrame:
+        # Check if user provided any additional parameters
+        separator = kwargs.get("separator", "#")
+        origin = kwargs.get("origin", "debug")
+
         sample_dict = {
             col: self.data.data[col].unique().tolist()
             if isinstance(self.data.data[col], (pd.Series, np.ndarray))
             else [self.data.data[col]]
             for col in list(self.data.column_names)
         }
-        
+
         counterfactuals = []
         for _, row in sample.iterrows():
             row_dict = row.to_dict()
@@ -270,24 +271,28 @@ class BugDocClassifierExplainer(ClassifierExplainer):
                 for clause in res:
                     if " == " in clause:
                         feature, value = clause.split(" == ")
-                        row_dict[feature] = [v for v in input_dict[feature] if v == value] [0]
+                        row_dict[feature] = [v for v in input_dict[feature] if v == value][0]
                     elif " != " in clause:
                         feature, value = clause.split(" != ")
-                        row_dict[feature] = [v for v in input_dict[feature] if v != value] [0]
+                        row_dict[feature] = [v for v in input_dict[feature] if v != value][0]
                     elif " < " in clause:
                         feature, value = clause.split(" < ")
-                        row_dict[feature] = [v for v in input_dict[feature] if v < float(value)] [0]
+                        row_dict[feature] = [v for v in input_dict[feature] if v < float(value)][0]
                     elif " >= " in clause:
                         feature, value = clause.split(" >= ")
-                        row_dict[feature] = [v for v in input_dict[feature] if v >= float(value)] [0]
-   
-                row_dict[self.data.target_name] = self.model.predict(pd.DataFrame([row_dict])[list(self.data.column_names)])[0]
+                        row_dict[feature] = [v for v in input_dict[feature] if v >= float(value)][0]
+
+                row_dict[self.data.target_name] = self.model.predict(
+                    pd.DataFrame([row_dict])[list(self.data.column_names)]
+                )[0]
                 counterfactual_df = pd.DataFrame([row_dict])
-                
-                counterfactual = Counterfactual(original_instance=original_instance.drop(columns=[self.data.target_name]),
-                                                counterfactual_instance=counterfactual_df.drop(columns=[self.data.target_name]),
-                                                original_prediction=original_instance[self.data.target_name].iloc[0],
-                                                counterfactual_prediction=counterfactual_df[self.data.target_name].iloc[0])
+
+                counterfactual = Counterfactual(
+                    original_instance=original_instance.drop(columns=[self.data.target_name]),
+                    counterfactual_instance=counterfactual_df.drop(columns=[self.data.target_name]),
+                    original_prediction=original_instance[self.data.target_name].iloc[0],
+                    counterfactual_prediction=counterfactual_df[self.data.target_name].iloc[0],
+                )
                 counterfactuals.append(counterfactual)
 
         if len(counterfactuals) == 0:

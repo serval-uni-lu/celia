@@ -31,6 +31,10 @@ ocean = [
 all = [
     "celia[torch]",
     "celia[ocean]",
+    "celia[stochastic]",
+]
+stochastic = [
+    "fastar",
 ]
 
 [build-system]
@@ -44,6 +48,7 @@ countergan = { git = "https://github.com/alanpar97/countergan.git" }
 clear-cf = { git = "https://github.com/alanpar97/clear.git" }
 cchvae = { git = "https://github.com/alanpar97/c-chvae.git" }
 bugdoc = { git = "https://github.com/VIDA-NYU/BugDoc.git", subdirectory = "bugdoc_api", rev = "standalone"}
+fastar = { git = "https://github.com/alanpar97/FastAR.git" }
 
 [dependency-groups]
 dev = [

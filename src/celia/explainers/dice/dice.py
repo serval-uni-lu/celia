@@ -333,6 +333,9 @@ class DiceClassifierExplainer(ClassifierExplainer):
         counterfactual_list: list[Counterfactual] = []
 
         for cf_group in results.cf_examples_list:
+            if cf_group.final_cfs_df is None or len(cf_group.final_cfs_df) == 0:
+                continue
+
             original_instance, counterfactual_instances, original_pred, cf_preds = self._get_true_predictions(cf_group)
 
             ce = Counterfactual(
@@ -342,6 +345,10 @@ class DiceClassifierExplainer(ClassifierExplainer):
                 counterfactual_prediction=cf_preds,
             )
             counterfactual_list.append(ce)
+
+        if not counterfactual_list:
+            message = "No counterfactuals generated. Check the input parameters and data."
+            raise NoCounterfactualsFoundError(message)
 
         return counterfactual_list
 

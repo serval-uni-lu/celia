@@ -42,6 +42,16 @@ class PublicData(BaseData):
         - Continuous features: a tuple (min, max) or a List[int | float] of length 2
         - Categorical features: a list of allowed values
 
+    monotonic_increasing_column_names : list[str] | None = None
+        Names of features that may only increase, never decrease (e.g. ``age``).
+        Must be a subset of ``continuous_column_names`` (when provided) and must not
+        overlap with ``immutable_column_names``.
+
+    correlated_features : list[tuple[str, str, float]] | None = None
+        List of ``(cause, effect, delta)`` triples describing mechanical couplings
+        between features: whenever ``cause`` is increased, ``effect`` is also increased
+        by ``delta``. Both ``cause`` and ``effect`` must exist in the dataset columns.
+
     Raises
     ------
     ConfigurationError
@@ -58,6 +68,8 @@ class PublicData(BaseData):
         categorical_column_names: list[str] | None = None,
         immutable_column_names: list[str] | None = None,
         feasible_values: dict[str, Any] | None = None,
+        monotonic_increasing_column_names: list[str] | None = None,
+        correlated_features: list[tuple[str, str, float]] | None = None,
     ) -> None:
         self._data = data
         self._column_names = list(data.columns) if column_names is None else list(column_names)
@@ -67,6 +79,8 @@ class PublicData(BaseData):
         self._categorical_column_names = categorical_column_names
         self._immutable_column_names = immutable_column_names
         self._feasible_values = feasible_values
+        self._monotonic_increasing_column_names = monotonic_increasing_column_names
+        self._correlated_features = correlated_features
 
         self._validate_data()
 
@@ -109,6 +123,16 @@ class PublicData(BaseData):
     def feasible_values(self) -> dict[str, Any] | None:
         """The feasible values for all relevant features."""
         return self._feasible_values
+
+    @property
+    def monotonic_increasing_column_names(self) -> list[str] | None:
+        """The list of monotonic increasing feature names."""
+        return self._monotonic_increasing_column_names
+
+    @property
+    def correlated_features(self) -> list[tuple[str, str, float]] | None:
+        """The list of correlated feature triples (cause, effect, delta)."""
+        return self._correlated_features
 
     def _check_feature_names_exist(self, feature_list: list[str], name: str) -> None:
         """
@@ -234,6 +258,124 @@ class PublicData(BaseData):
                 hint="Provide feasible values as a dictionary mapping feature names to valid ranges or categories.",
             )
 
+        if self.monotonic_increasing_column_names is not None and not isinstance(
+            self.monotonic_increasing_column_names, list
+        ):
+            message = "'monotonic_increasing_column_names' must be a list of strings or None, got "
+            raise ConfigurationError(
+                message=f"{message}{type(self.monotonic_increasing_column_names).__name__}",
+                param="monotonic_increasing_column_names",
+                config={"provided_type": type(self.monotonic_increasing_column_names).__name__},
+                hint="Pass a list of monotonic increasing feature names, or None.",
+            )
+
+        if self.correlated_features is not None and not isinstance(self.correlated_features, list):
+            message = "'correlated_features' must be a list of (cause, effect, delta) tuples or None, got "
+            raise ConfigurationError(
+                message=f"{message}{type(self.correlated_features).__name__}",
+                param="correlated_features",
+                config={"provided_type": type(self.correlated_features).__name__},
+                hint="Provide correlated features as a list of (cause, effect, delta) tuples, or None.",
+            )
+
+    @staticmethod
+    def _check_monotonic_immutable_overlap(monotonic: list[str], immutable: list[str]) -> None:
+        overlap = set(monotonic).intersection(immutable)
+        if overlap:
+            message = (
+                "Some features are defined as both monotonic_increasing and immutable, "
+                f"which is not allowed: {sorted(overlap)}"
+            )
+            raise ConfigurationError(
+                message=message,
+                param="monotonic_increasing_column_names",
+                config={
+                    "monotonic_increasing": monotonic,
+                    "immutable": immutable,
+                    "overlap": sorted(overlap),
+                },
+                hint="A feature cannot be both immutable and monotonic_increasing. Remove it from one of the lists.",
+            )
+
+    @staticmethod
+    def _check_monotonic_subset_of_continuous(monotonic: list[str], continuous: list[str]) -> None:
+        not_continuous = set(monotonic) - set(continuous)
+        if not_continuous:
+            message = (
+                "Monotonic increasing features must be continuous, "
+                f"but the following are not in continuous_column_names: {sorted(not_continuous)}"
+            )
+            raise ConfigurationError(
+                message=message,
+                param="monotonic_increasing_column_names",
+                config={
+                    "monotonic_increasing": monotonic,
+                    "continuous": continuous,
+                    "not_continuous": sorted(not_continuous),
+                },
+                hint="Ensure all monotonic_increasing features are also listed in continuous_column_names.",
+            )
+
+    def _check_correlated_features_validity(self, correlated: list[tuple[str, str, float]]) -> None:
+        for i, entry in enumerate(correlated):
+            if not isinstance(entry, tuple) or len(entry) != 3:
+                message = (
+                    f"Each correlated_features entry must be a (cause, effect, delta) tuple, got {entry!r} at index {i}"
+                )
+                raise ConfigurationError(
+                    message=message,
+                    param="correlated_features",
+                    config={"index": i, "entry": str(entry)},
+                    hint="Provide each entry as a tuple of (cause_column, effect_column, delta_float).",
+                )
+
+            cause, effect, delta = entry
+
+            if not isinstance(cause, str) or not isinstance(effect, str):
+                message = f"Correlated feature cause and effect must be strings, got ({type(cause).__name__}, {type(effect).__name__}) at index {i}"
+                raise ConfigurationError(
+                    message=message,
+                    param="correlated_features",
+                    config={"index": i, "entry": str(entry)},
+                    hint="Use column name strings for cause and effect.",
+                )
+
+            if not isinstance(delta, (int, float)):
+                message = f"Correlated feature delta must be numeric, got {type(delta).__name__} at index {i}"
+                raise ConfigurationError(
+                    message=message,
+                    param="correlated_features",
+                    config={"index": i, "entry": str(entry)},
+                    hint="Provide delta as an int or float value.",
+                )
+
+            if cause == effect:
+                message = f"Correlated feature cause and effect must be different columns, got '{cause}' for both at index {i}"
+                raise ConfigurationError(
+                    message=message,
+                    param="correlated_features",
+                    config={"index": i, "entry": str(entry)},
+                    hint="Use two different column names for cause and effect.",
+                )
+
+            if cause not in self.data.columns:
+                message = f"Correlated feature cause '{cause}' is not in the dataset (index {i})"
+                raise ConfigurationError(
+                    message=message,
+                    param="correlated_features",
+                    config={"index": i, "cause": cause, "columns": list(self.data.columns)},
+                    hint="Ensure the cause column exists in the dataset.",
+                )
+
+            if effect not in self.data.columns:
+                message = f"Correlated feature effect '{effect}' is not in the dataset (index {i})"
+                raise ConfigurationError(
+                    message=message,
+                    param="correlated_features",
+                    config={"index": i, "effect": effect, "columns": list(self.data.columns)},
+                    hint="Ensure the effect column exists in the dataset.",
+                )
+
     def _validate_data(self) -> None:
         """
         Validate the dataset and its properties.
@@ -288,3 +430,19 @@ class PublicData(BaseData):
 
         if self.feasible_values is not None:
             self._check_range_dict_validity(self.feasible_values)
+
+        if self.monotonic_increasing_column_names is not None:
+            self._check_feature_names_exist(self.monotonic_increasing_column_names, "monotonic_increasing")
+
+            if self.immutable_column_names is not None:
+                self._check_monotonic_immutable_overlap(
+                    self.monotonic_increasing_column_names, self.immutable_column_names
+                )
+
+            if self.continuous_column_names is not None:
+                self._check_monotonic_subset_of_continuous(
+                    self.monotonic_increasing_column_names, self.continuous_column_names
+                )
+
+        if self.correlated_features is not None:
+            self._check_correlated_features_validity(self.correlated_features)

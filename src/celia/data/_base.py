@@ -71,6 +71,31 @@ class BaseData(ABC):
             - Categorical features → list of valid categories
         """
 
+    @property
+    @abstractmethod
+    def monotonic_increasing_column_names(self) -> list[str]:
+        """
+        Return the names of features that may only increase, never decrease.
+
+        Returns
+        -------
+        list[str]
+            List of monotonic increasing feature names.
+        """
+
+    @property
+    @abstractmethod
+    def correlated_features(self) -> list[tuple[str, str, float]]:
+        """
+        Return correlated feature triples of (cause, effect, delta).
+
+        Returns
+        -------
+        list[tuple[str, str, float]]
+            Each tuple describes a mechanical coupling: whenever ``cause``
+            is increased, ``effect`` is also increased by ``delta``.
+        """
+
     @abstractmethod
     def _validate_inputs(self, *args: object, **kwargs: object) -> NoReturn:
         """
