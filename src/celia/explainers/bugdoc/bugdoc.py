@@ -1,5 +1,4 @@
 import logging
-from itertools import product
 from typing import Dict, List, Tuple, Union
 
 import bugdoc.utils.tree as _tree
@@ -92,7 +91,7 @@ class BugDocRegressorExplainer(RegressorExplainer):
         for _, row in sample.iterrows():
             row_dict = row.to_dict()
             row_dict[self.data.target_name] = self.model.predict(row.to_frame().T)[0]
-            original_instance=pd.DataFrame([row_dict])
+            original_instance = pd.DataFrame([row_dict])
             immutable_columns = self.data.immutable_column_names if self.data.immutable_column_names is not None else []
             coliumn_names = list(self.data.column_names) if self.data.column_names is not None else []
             input_dict = {col: [row[col]] if col in immutable_columns else sample_dict[col] for col in coliumn_names}
@@ -103,27 +102,34 @@ class BugDocRegressorExplainer(RegressorExplainer):
             combinatorial_df = pd.DataFrame(combinatorial)
             predictions = self.model.predict(combinatorial_df)
             combinatorial_evaluations = [
-                (predictions[i] < target_range[0] or target_range[1] < predictions[i])
-                for i in range(len(predictions))
+                (predictions[i] < target_range[0] or target_range[1] < predictions[i]) for i in range(len(predictions))
             ]
-            
+
             combinatorial_rows_as_lists = [list(row) for _, row in combinatorial_df.iterrows()]
             combinatorial_boolean_evaluations = combinatorial_evaluations
 
-            logging.debug("Executing BugDoc with historical runs: %d combinations", len(combinatorial_boolean_evaluations))
+            logging.debug(
+                "Executing BugDoc with historical runs: %d combinations", len(combinatorial_boolean_evaluations)
+            )
 
-            autodebug = StackedShortcut(max_iter=self.budget,
-                                        function=model_predict,
-                                        separator=separator,
-                                        origin=origin)
-            
-            results = autodebug.run('entry_point', input_dict, historical_runs=(combinatorial_rows_as_lists, combinatorial_boolean_evaluations))
+            autodebug = StackedShortcut(
+                max_iter=self.budget, function=model_predict, separator=separator, origin=origin
+            )
+
+            results = autodebug.run(
+                "entry_point",
+                input_dict,
+                historical_runs=(combinatorial_rows_as_lists, combinatorial_boolean_evaluations),
+            )
             if len(results) == 0:
-                autodebug = DebuggingDecisionTrees(max_iter=self.budget,
-                                            function=model_predict,
-                                            separator=separator,
-                                            origin=origin)
-                _, t, _ = autodebug.run('entry_point', input_dict, historical_runs=(combinatorial_rows_as_lists, combinatorial_boolean_evaluations))
+                autodebug = DebuggingDecisionTrees(
+                    max_iter=self.budget, function=model_predict, separator=separator, origin=origin
+                )
+                _, t, _ = autodebug.run(
+                    "entry_point",
+                    input_dict,
+                    historical_runs=(combinatorial_rows_as_lists, combinatorial_boolean_evaluations),
+                )
                 if _tree.get_depth(t) > 0:
                     keys = list(input_dict.keys())
                     results = prune_tree(t, keys)
@@ -231,38 +237,47 @@ class BugDocClassifierExplainer(ClassifierExplainer):
             def model_predict(input_dict: Dict[str, list[object]]) -> bool:
                 input_df = pd.DataFrame([input_dict])
                 return self.model.predict(input_df)[0] == row_dict[self.data.target_name]
-            
-            original_instance=pd.DataFrame([row_dict])
+
+            original_instance = pd.DataFrame([row_dict])
             immutable_columns = self.data.immutable_column_names if self.data.immutable_column_names is not None else []
             coliumn_names = list(self.data.column_names) if self.data.column_names is not None else []
             input_dict = {col: [row[col]] if col in immutable_columns else sample_dict[col] for col in coliumn_names}
-            
+
             # Create historical run for BugDoc using its combinatorial function and the model prediction for a batch of inputs
 
             combinatorial = load_combinatorial(input_dict, max_pair_product=100)
             combinatorial_df = pd.DataFrame(combinatorial)
             predictions = self.model.predict(combinatorial_df)
             combinatorial_evaluations = [
-                bool(predictions[i] == row_dict[self.data.target_name])
-                for i in range(len(predictions))
+                bool(predictions[i] == row_dict[self.data.target_name]) for i in range(len(predictions))
             ]
             combinatorial_rows_as_lists = [list(row) for _, row in combinatorial_df.iterrows()]
-            combinatorial_boolean_evaluations = [combinatorial_rows_as_lists[i] + [combinatorial_evaluations[i]] for i in range(len(predictions))]
-            
-            logging.debug("Executing BugDoc with historical runs: %d combinations", len(combinatorial_boolean_evaluations))
-            autodebug = StackedShortcut(max_iter=self.budget,
-                                        function=model_predict,
-                                        separator=separator,
-                                        origin=origin)
-        
-            results = autodebug.run('entry_point', input_dict, historical_runs=(combinatorial_rows_as_lists, combinatorial_boolean_evaluations))
-            
+            combinatorial_boolean_evaluations = [
+                combinatorial_rows_as_lists[i] + [combinatorial_evaluations[i]] for i in range(len(predictions))
+            ]
+
+            logging.debug(
+                "Executing BugDoc with historical runs: %d combinations", len(combinatorial_boolean_evaluations)
+            )
+            autodebug = StackedShortcut(
+                max_iter=self.budget, function=model_predict, separator=separator, origin=origin
+            )
+
+            results = autodebug.run(
+                "entry_point",
+                input_dict,
+                historical_runs=(combinatorial_rows_as_lists, combinatorial_boolean_evaluations),
+            )
+
             if len(results) == 0:
-                autodebug = DebuggingDecisionTrees(max_iter=self.budget,
-                                            function=model_predict,
-                                            separator=separator,
-                                            origin=origin)
-                _, t, _ = autodebug.run('entry_point', input_dict, historical_runs=(combinatorial_rows_as_lists, combinatorial_boolean_evaluations))
+                autodebug = DebuggingDecisionTrees(
+                    max_iter=self.budget, function=model_predict, separator=separator, origin=origin
+                )
+                _, t, _ = autodebug.run(
+                    "entry_point",
+                    input_dict,
+                    historical_runs=(combinatorial_rows_as_lists, combinatorial_boolean_evaluations),
+                )
                 if _tree.get_depth(t) > 0:
                     keys = list(input_dict.keys())
                     results = prune_tree(t, keys)
