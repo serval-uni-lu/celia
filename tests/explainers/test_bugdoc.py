@@ -11,7 +11,7 @@ class DummyStackedShortcut:
     def __init__(self, *args, **kwargs):
         pass
 
-    def run(self, entry_point, input_dict):
+    def run(self, entry_point, input_dict, historical_runs=None):
         return [["feature2 >= 20"]]
 
 
@@ -19,17 +19,17 @@ class DummyDebuggingDecisionTrees:
     def __init__(self, *args, **kwargs):
         pass
 
-    def run(self, entry_point, input_dict):
+    def run(self, entry_point, input_dict, historical_runs=None):
         return None, None, None
 
 
 class DummyStackedShortcutEmpty(DummyStackedShortcut):
-    def run(self, entry_point, input_dict):
+    def run(self, entry_point, input_dict, historical_runs=None):
         return []
 
 
 class DummyStackedShortcutClauseOperators(DummyStackedShortcut):
-    def run(self, entry_point, input_dict):
+    def run(self, entry_point, input_dict, historical_runs=None):
         return [[
             "feature4 == B",
             "feature4 != A",
@@ -39,7 +39,7 @@ class DummyStackedShortcutClauseOperators(DummyStackedShortcut):
 
 
 class DummyDebuggingDecisionTreesWithTree(DummyDebuggingDecisionTrees):
-    def run(self, entry_point, input_dict):
+    def run(self, entry_point, input_dict, historical_runs=None):
         return None, object(), None
 
 
