@@ -46,11 +46,13 @@ def __getattr__(name: str) -> Any:
         module_path, attr_name = _LAZY_IMPORTS[name]
         try:
             from importlib import import_module
+
             module = import_module(module_path, package=__name__)
         except ImportError as e:
-            msg = (f"{name} requires additional dependencies. "
+            msg = (
+                f"{name} requires additional dependencies. "
                 f"Install the appropriate extra: uv sync --extra <torch|ocean|stochastic>"
-                   )
+            )
             raise ImportError(msg) from e
         return getattr(module, attr_name)
     msg = f"module {__name__!r} has no attribute {name!r}"
