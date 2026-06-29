@@ -2,7 +2,6 @@ from typing import Any
 
 from ._base import BaseExplainer, ClassifierExplainer, RegressorExplainer
 from .bugdoc import BugDocClassifierExplainer, BugDocRegressorExplainer
-from .certifai import CertifaiClassifierExplainer, CertifaiRegressorExplainer
 from .clear import CLEARClassifierExplainer
 from .dice import DiceClassifierExplainer, DiceRegressorExplainer
 from .grace import GRACEClassifierExplainer
@@ -23,7 +22,6 @@ __all__ = [
     "BaseExplainer",
     "RegressorExplainer",
     "ClassifierExplainer",
-    "CertifaiClassifierExplainer",
     "CertifaiRegressorExplainer",
     "CCHVAEClassifierExplainer",
     "CounterGANClassifierExplainer",
