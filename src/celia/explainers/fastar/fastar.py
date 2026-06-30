@@ -51,11 +51,28 @@ class FastARClassifierExplainer(ClassifierExplainer):
         Forwarded to ``FastAR()`` constructor (e.g. ``dist_lambda``,
         ``max_episode_steps``, ``policy_kwargs``, ``seed``).
 
+    Raises
+    ------
+    ConfigurationError
+        If ``data`` is not a ``Data`` instance, ``target_class`` is not an
+        int, ``total_timesteps`` is not a positive int, or ``policy_path``
+        does not exist.
+
     References
     ----------
     Verma, S., Hines, K., & Dickerson, J. P. (2022, June).
-    Amortized generation of sequential algorithmic recourses for black-box models.
-    In Proceedings of the AAAI Conference on Artificial Intelligence (Vol. 36, No. 8, pp. 8512-8519).
+    Amortized generation of sequential algorithmic recourses for black-box
+    models. In Proceedings of the AAAI Conference on Artificial
+    Intelligence (Vol. 36, No. 8, pp. 8512-8519).
+
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, FastARClassifierExplainer
+    >>> explainer = FastARClassifierExplainer(
+    ...     model=sklearn_model, data=data, target_class=1,
+    ...     total_timesteps=500_000,
+    ... )
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(

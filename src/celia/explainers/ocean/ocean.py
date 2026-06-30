@@ -36,11 +36,23 @@ class OCEANClassifierExplainer(ClassifierExplainer):
         Training data with metadata (feature names, types, constraints).
         All features must be numeric.
 
+    Raises
+    ------
+    ConfigurationError
+        If ``model`` is not a ``SklearnModel``, ``data`` is not a ``Data``
+        instance, or the data contains non-numeric columns.
+
     References
     ----------
     Parmentier, A., & Vidal, T. (2021). Optimal Counterfactual Explanations
     in Tree Ensembles. Proceedings of the 38th International Conference on
     Machine Learning (ICML).
+
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, OCEANClassifierExplainer
+    >>> explainer = OCEANClassifierExplainer(model=sklearn_model, data=data)
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     _ocean_mapper: Mapper[Feature]

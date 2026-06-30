@@ -5,7 +5,7 @@ from .bugdoc import BugDocClassifierExplainer, BugDocRegressorExplainer
 from .clear import CLEARClassifierExplainer
 from .dice import DiceClassifierExplainer, DiceRegressorExplainer
 from .grace import GRACEClassifierExplainer
-from .growing_spheres import GSGClassifierExplainer
+from .growing_spheres import GrowingSpheresClassifierExplainer
 from .nnce import NNCEClassifierExplainer, NNCERegressorExplainer
 
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
@@ -28,7 +28,7 @@ __all__ = [
     "DiceRegressorExplainer",
     "FastARClassifierExplainer",
     "GRACEClassifierExplainer",
-    "GSGClassifierExplainer",
+    "GrowingSpheresClassifierExplainer",
     "NNCEClassifierExplainer",
     "NNCERegressorExplainer",
     "CLEARClassifierExplainer",

@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 class BaseModel(ABC, BaseEstimator):
     """
-    Abstract base class to wrap models from different backends in Celia.
+    Abstract base class to wrap models from different backends in CELIA.
     All model classes should inherit from this class and implement the required methods.
     """
 
@@ -73,8 +73,27 @@ class BaseModel(ABC, BaseEstimator):
 
 
 class SklearnModel(BaseModel):
-    """
-    Wrapper for scikit-learn models.
+    """Wrapper for scikit-learn compatible estimators.
+
+    Delegates ``predict`` and ``predict_proba`` directly to the underlying
+    estimator.  Any object that implements the scikit-learn estimator
+    interface (``fit`` / ``predict``) can be wrapped — this includes
+    pipelines, gradient-boosting libraries (XGBoost, LightGBM), and custom
+    estimators.
+
+    Parameters
+    ----------
+    model : BaseEstimator
+        A fitted scikit-learn estimator (or compatible object) that
+        implements ``predict`` and, optionally, ``predict_proba``.
+
+    Examples
+    --------
+    >>> from sklearn.ensemble import RandomForestClassifier
+    >>> from celia import SklearnModel
+    >>> clf = RandomForestClassifier().fit(X_train, y_train)
+    >>> wrapped = SklearnModel(clf)
+    >>> wrapped.predict(X_test)
     """
 
     def predict(self, x):
@@ -89,9 +108,25 @@ class SklearnModel(BaseModel):
 
 @requires_torch_class
 class TorchModel(BaseModel):
-    """
-    Wrapper for PyTorch models to standardize prediction interface,
-    while exposing the raw model for gradient-based methods (e.g., GRACE).
+    """Wrapper for PyTorch ``nn.Module`` models.
+
+    Converts inputs to tensors, runs inference in ``eval`` mode with
+    gradients disabled, and returns NumPy arrays.  The original module is
+    accessible via :attr:`raw_model` for gradient-based explainers
+    (e.g., GRACE).
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        A trained PyTorch module whose forward pass returns class logits.
+
+    Examples
+    --------
+    >>> import torch.nn as nn
+    >>> from celia import TorchModel
+    >>> net = nn.Sequential(nn.Linear(4, 10), nn.ReLU(), nn.Linear(10, 2))
+    >>> wrapped = TorchModel(net)
+    >>> wrapped.predict(X_test)
     """
 
     def __init__(self, model: "nn.Module"):

@@ -61,11 +61,24 @@ class CLEARClassifierExplainer(ClassifierExplainer):
     config : RegressionConfig or None, default=None
         Optional regression configuration for the CLEAR algorithm.
 
+    Raises
+    ------
+    ConfigurationError
+        If ``data`` is not a ``Data`` instance, if the data contains
+        non-numeric columns, if the model lacks ``predict_proba``, or if
+        ``num_classes > 2`` without ``class_labels``.
+
     References
     ----------
     White, A., & d'Avila Garcez, A. (2020).
     Measurable Counterfactual Local Explanations via Regression.
     In *ECAI 2020* (pp. 1529-1536). IOS Press.
+
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, CLEARClassifierExplainer
+    >>> explainer = CLEARClassifierExplainer(model=sklearn_model, data=data)
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(self, model: BaseModel, data: BaseData, *args: object, **kwargs: object) -> None:
@@ -208,9 +221,8 @@ class CLEARClassifierExplainer(ClassifierExplainer):
         except AttributeError as exc:
             # clear_cf crashes with ``AttributeError: 'DataFrame' object has no
             # attribute 'observation'`` when its internal regression produces an
-            # empty boundary DataFrame (e.g., a constant-prediction model). Treat
-            # this as "no counterfactuals found" rather than leaking the upstream
-            # bug to the user.
+            # empty boundary DataFrame (e.g., a constant-prediction model). We treat
+            # this as "no counterfactuals found".
             if "observation" in str(exc):
                 message = "No counterfactuals found."
                 raise NoCounterfactualsFoundError(

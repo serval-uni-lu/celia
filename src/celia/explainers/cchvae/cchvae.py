@@ -19,18 +19,63 @@ from celia.model import BaseModel
 
 @requires_torch_class
 class CCHVAEClassifierExplainer(ClassifierExplainer):
-    """
-    C-CHVAE: Counterfactual Conditional Heterogeneous Variational Autoencoder.
+    """C-CHVAE: Counterfactual Conditional Heterogeneous Variational Autoencoder.
 
-    Learning Model-Agnostic Counterfactual Explanations for Tabular Data.
-    Martin Pawelczyk, Klaus Broelemann, Gjergji Kasneci. WWW '20.
+    Trains a conditional heterogeneous VAE on the background dataset and
+    searches latent-space hyperspheres to produce counterfactuals that flip
+    the classifier's prediction to a user-specified ``target_class``.
 
-    This explainer trains a conditional heterogeneous VAE on the background
-    dataset and searches latent-space hyperspheres to produce counterfactuals
-    that flip the classifier's prediction to a user-specified ``target_class``.
+    Because C-CHVAE is an amortized, class-conditioned method,
+    ``target_class`` must be fixed at construction time.
 
-    Because C-CHVAE is an amortized, class-conditioned method, ``target_class``
-    must be fixed at construction time.
+    Parameters
+    ----------
+    model : BaseModel
+        A CELIA model wrapper (``SklearnModel`` or ``TorchModel``).
+    data : Data
+        Training data with metadata (feature names, types, constraints).
+    target_class : int or str
+        The desired class for counterfactuals. Required.
+    feature_types : dict[str, str] or None, default=None
+        Per-column type override (``"real"``, ``"count"``, ``"cat"``).
+        When ``None``, types are inferred from ``Data`` metadata.
+    latent_dim : int, default=2
+        Dimensionality of the VAE latent space.
+    intermediate_dim : int, default=5
+        Width of VAE hidden layers.
+    categorical_latent_dim : int, default=3
+        Latent dimension for categorical features.
+    learning_rate : float, default=1e-3
+        Optimiser learning rate.
+    epochs : int, default=80
+        Number of VAE training epochs.
+    batch_size : int, default=100
+        Training batch size.
+    device : str, default="cpu"
+        PyTorch device (``"cpu"`` or ``"cuda"``).
+    random_state : int or None, default=619
+        Random seed for reproducibility.
+    verbose : bool, default=False
+        If ``True``, print progress during training.
+
+    Raises
+    ------
+    ConfigurationError
+        If ``data`` is not a ``Data`` instance, ``target_class`` is missing,
+        or the upstream C-CHVAE library rejects the configuration.
+
+    References
+    ----------
+    Pawelczyk, M., Broelemann, K., & Kasneci, G. (2020). Learning
+    Model-Agnostic Counterfactual Explanations for Tabular Data. WWW '20.
+
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, CCHVAEClassifierExplainer
+    >>> explainer = CCHVAEClassifierExplainer(
+    ...     model=sklearn_model, data=data, target_class=1,
+    ... )
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(

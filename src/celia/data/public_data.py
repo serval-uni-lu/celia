@@ -9,7 +9,6 @@ from celia.errors import ConfigurationError
 
 class Data(BaseData):
     """
-    Concrete implementation of BaseData for tabular data.
     This class wraps the training data, labels, and metadata required by CELIA explainers.
     It provides structured access to feature types, immutability constraints, and
     feasible values, and performs internal consistency validation upon instantiation.
@@ -61,6 +60,21 @@ class Data(BaseData):
     ------
     ConfigurationError
         If any consistency check fails (e.g., overlapping feature types, missing values, invalid ranges).
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from celia import Data
+    >>> X = pd.DataFrame({"age": [25, 40], "income": [30000, 80000]})
+    >>> y = pd.Series([0, 1], name="approved")
+    >>> data = Data(
+    ...     data=X,
+    ...     targets=y,
+    ...     target_name="approved",
+    ...     continuous_column_names=["age", "income"],
+    ...     immutable_column_names=["age"],
+    ...     feasible_values={"income": (0, 200000)},
+    ... )
     """
 
     def __init__(

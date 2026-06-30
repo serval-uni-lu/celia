@@ -8,18 +8,18 @@ from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
-from celia.explainers.growing_spheres.gsg import GSG
+from celia.explainers.growing_spheres.gsg import GrowingSpheres
 from celia.model import BaseModel
 
 
-class GSGClassifierExplainer(ClassifierExplainer):
-    """Growing Spheres Generation classifier explainer.
+class GrowingSpheresClassifierExplainer(ClassifierExplainer):
+    """Growing Spheres classifier explainer.
 
     Generates counterfactual explanations by iteratively expanding a
     hyperspherical shell around an input instance until a candidate that
     flips the model's predicted class is found.
 
-    GSG supports any model backend (sklearn, torch) that exposes
+    Growing Spheres supports any model backend (sklearn, torch) that exposes
     ``predict_proba``.  All features must be numeric — categorical
     features must be one-hot encoded before use.
 
@@ -31,35 +31,47 @@ class GSGClassifierExplainer(ClassifierExplainer):
         Training data with metadata (feature names, types, constraints).
         All features must be numeric.
 
+    Raises
+    ------
+    ConfigurationError
+        If ``data`` is not a ``Data`` instance or contains non-numeric
+        columns.
+
     References
     ----------
     Laugel, T., Lesot, M.-J., Marsala, C., Renard, X., & Detyniecki, M.
     (2018). Comparison-based Inverse Classification for Interpretability
     in Machine Learning. IPMU.
+
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, GrowingSpheresClassifierExplainer
+    >>> explainer = GrowingSpheresClassifierExplainer(model=sklearn_model, data=data)
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(self, model: BaseModel, data: BaseData, *args: object, **kwargs: object) -> None:
         if not isinstance(data, Data):
-            message = "GSGClassifierExplainer requires data to be an instance of Data."
+            message = "GrowingSpheresClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
                 config={"expected": "Data", "received": type(data).__name__},
-                source="GSGClassifierExplainer.__init__",
+                source="GrowingSpheresClassifierExplainer.__init__",
             )
 
         non_numeric = data.data.select_dtypes(exclude=["number"]).columns.tolist()
         if non_numeric:
             message = (
-                f"GSG requires all features to be numeric. "
+                f"Growing Spheres requires all features to be numeric. "
                 f"Found non-numeric columns: {non_numeric}. "
                 f"Categorical features must be one-hot encoded."
             )
             raise ConfigurationError(
                 message=message,
                 param="data",
-                hint="One-hot encode categorical features before passing data to GSG.",
-                source="GSGClassifierExplainer.__init__",
+                hint="One-hot encode categorical features before passing data to Growing Spheres.",
+                source="GrowingSpheresClassifierExplainer.__init__",
             )
 
         super().__init__(model, data, *args, **kwargs)
@@ -70,7 +82,7 @@ class GSGClassifierExplainer(ClassifierExplainer):
         data: BaseData,
         *args,
         **kwargs,
-    ) -> GSG:
+    ) -> GrowingSpheres:
         data_cast: Data = data  # type: ignore[assignment]
 
         feature_order = data_cast.column_names
@@ -91,7 +103,7 @@ class GSGClassifierExplainer(ClassifierExplainer):
         max_shrink_iterations = kwargs.get("max_shrink_iterations", 50)
         seed = kwargs.get("seed", 42)
 
-        return GSG(
+        return GrowingSpheres(
             model=model,
             mutable_features=mutable_features,
             immutable_features=immutable_features,
@@ -112,15 +124,15 @@ class GSGClassifierExplainer(ClassifierExplainer):
         non_numeric = frame.select_dtypes(exclude=["number"]).columns.tolist()
         if non_numeric:
             message = (
-                f"GSG requires all features to be numeric. "
+                f"Growing Spheres requires all features to be numeric. "
                 f"Found non-numeric columns: {non_numeric}. "
                 f"Categorical features must be one-hot encoded."
             )
             raise ConfigurationError(
                 message=message,
                 param="sample",
-                hint="One-hot encode categorical features before passing data to GSG.",
-                source="GSGClassifierExplainer._validate_sample",
+                hint="One-hot encode categorical features before passing data to Growing Spheres.",
+                source="GrowingSpheresClassifierExplainer._validate_sample",
             )
 
     def _generate_counterfactuals(

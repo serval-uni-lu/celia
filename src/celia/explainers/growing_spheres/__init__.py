@@ -1,3 +1,3 @@
-from .growing_spheres import GSGClassifierExplainer
+from .growing_spheres import GrowingSpheresClassifierExplainer
 
-__all__ = ["GSGClassifierExplainer"]
+__all__ = ["GrowingSpheresClassifierExplainer"]

@@ -326,18 +326,13 @@ class NNCERegressorExplainer(RegressorExplainer):
     Raises
     ------
     ConfigurationError
+        If ``data`` is not an instance of ``Data``.
 
-    Attributes
-    ----------
-    model : BaseModel
-        The regression model to be explained.
-
-    data : Data
-        The dataset used to generate counterfactual explanations.
-
-    explainer : NearestNeighborCE
-        Instance of the NearestNeighborCE class initialized with training data, model,
-        and target variable for regression tasks.
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, NNCERegressorExplainer
+    >>> explainer = NNCERegressorExplainer(model=sklearn_model, data=data)
+    >>> cfs = explainer.generate_counterfactuals(sample, target_range=(50000, 80000))
     """
 
     def __init__(self, model: BaseModel, data: Data, *args, **kwargs):

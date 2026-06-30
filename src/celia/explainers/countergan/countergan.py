@@ -46,11 +46,27 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
         CounterGAN backend: ``"torch"`` or ``"tensorflow"``. Auto-detected
         when ``None``.
 
+    Raises
+    ------
+    ConfigurationError
+        If ``model`` is not a ``TorchModel``, ``data`` is not a ``Data``
+        instance, the data contains non-numeric columns, or
+        ``desired_class`` is not found in the training targets.
+
     References
     ----------
     Nemirovsky, D., Thiebaut, N., Xu, Y., & Gupta, A.
-    (2022, August). CounteRGAN: Generating counterfactuals for real-time recourse and interpretability using residual GANs.
-    Uncertainty in Artificial Intelligence (pp. 1488-1497). PMLR.
+    (2022, August). CounteRGAN: Generating counterfactuals for real-time
+    recourse and interpretability using residual GANs. Uncertainty in
+    Artificial Intelligence (pp. 1488-1497). PMLR.
+
+    Examples
+    --------
+    >>> from celia import Data, TorchModel, CounterGANClassifierExplainer
+    >>> explainer = CounterGANClassifierExplainer(
+    ...     model=torch_model, data=data, desired_class=1,
+    ... )
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(self, model: BaseModel, data: BaseData, *args: object, **kwargs: object) -> None:

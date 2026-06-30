@@ -327,9 +327,42 @@ class GRACE:
 
 
 class GRACEClassifierExplainer(ClassifierExplainer):
-    """
-    GRACE: Generating Concise and Informative Contrastive Sample to Explain Neural Network Model’s Prediction.
-    Thai Le, Suhang Wang, Dongwon Lee. 26th ACM SIGKDD Int’l Conf. on Knowledge Discovery and Data Mining (KDD), Virtual. August 2020.
+    """GRACE classifier explainer.
+
+    Generates concise contrastive samples for neural-network classifiers by
+    iteratively perturbing the most salient features (via gradient-based
+    ranking) within user-specified feasible bounds.
+
+    GRACE requires a ``TorchModel`` backend — scikit-learn models are not
+    supported.  All features must be numeric; categorical features must be
+    one-hot encoded before use.
+
+    Parameters
+    ----------
+    model : TorchModel
+        A CELIA ``TorchModel`` wrapper around a ``torch.nn.Module``.
+    data : Data
+        Training data with metadata (feature names, types, constraints).
+
+    Raises
+    ------
+    ConfigurationError
+        If ``model`` is not a ``TorchModel`` or ``data`` is not a ``Data``
+        instance.
+
+    References
+    ----------
+    Thai Le, Suhang Wang, Dongwon Lee. "Generating Concise and Informative
+    Contrastive Sample to Explain Neural Network Model’s Prediction."
+    26th ACM SIGKDD Int’l Conf. on Knowledge Discovery and Data Mining
+    (KDD), 2020.
+
+    Examples
+    --------
+    >>> from celia import Data, TorchModel, GRACEClassifierExplainer
+    >>> wrapped = TorchModel(net)
+    >>> explainer = GRACEClassifierExplainer(model=wrapped, data=data)
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(self, model: BaseModel, data: BaseData, *args: object, **kwargs: object) -> None:
