@@ -8,7 +8,7 @@ from cchvae import Counterfactual as CCHVAECounterfactual
 from cchvae.errors import CCHVAEError, CCHVAEValueError
 from cchvae.types import VALID_FEATURE_TYPES, FeatureType
 
-from celia._utils.dependecies import requires_torch_class
+from celia._utils.dependencies import requires_torch_class
 from celia.counterfactuals import Counterfactual
 from celia.data import PublicData
 from celia.data._base import BaseData

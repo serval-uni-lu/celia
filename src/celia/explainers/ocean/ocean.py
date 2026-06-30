@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pandas as pd
 
-from celia._utils.dependecies import requires_ocean_class
+from celia._utils.dependencies import requires_ocean_class
 from celia.counterfactuals import Counterfactual
 from celia.data import PublicData
 from celia.data._base import BaseData

@@ -250,7 +250,7 @@ If your method requires PyTorch:
 
 2. Validate that the model is a `TorchModel` in `__init__`.
 
-3. Use the `@requires_torch_class` decorator if the **entire class** depends on torch (see `src/celia/_utils/dependecies.py`).
+3. Use the `@requires_torch_class` decorator if the **entire class** depends on torch (see `src/celia/_utils/dependencies.py`).
 
 4. Reference `src/celia/explainers/grace/grace.py` as the canonical torch-only example.
 
@@ -549,14 +549,14 @@ CI runs ruff and pytest automatically on PRs to `main` and `dev` (see `.github/w
 
 ## Reference Files
 
-| File | Purpose |
-|------|---------|
-| `src/celia/explainers/_base.py` | Base classes (`ClassifierExplainer`, `RegressorExplainer`) |
-| `src/celia/explainers/ocean/ocean.py` | Reference classifier explainer implementation |
-| `tests/explainers/classifier_test_suite.py` | Test mixin with capability flags |
-| `tests/explainers/test_ocean.py` | Reference test file using the mixin |
-| `src/celia/explainers/__init__.py` | Explainer registration (update when adding methods) |
-| `src/celia/errors.py` | Error hierarchy |
+| File                                           | Purpose |
+|------------------------------------------------|---------|
+| `src/celia/explainers/_base.py`                | Base classes (`ClassifierExplainer`, `RegressorExplainer`) |
+| `src/celia/explainers/ocean/ocean.py`          | Reference classifier explainer implementation |
+| `tests/explainers/classifier_test_suite.py`    | Test mixin with capability flags |
+| `tests/explainers/test_ocean.py`               | Reference test file using the mixin |
+| `src/celia/explainers/__init__.py`             | Explainer registration (update when adding methods) |
+| `src/celia/errors.py`                          | Error hierarchy |
 | `src/celia/counterfactuals/counterfactuals.py` | `Counterfactual` dataclass |
-| `src/celia/explainers/grace/grace.py` | Reference for torch-only / embedded-code methods |
-| `src/celia/_utils/dependecies.py` | `@requires_torch_class` decorator |
+| `src/celia/explainers/grace/grace.py`          | Reference for torch-only / embedded-code methods |
+| `src/celia/_utils/dependencies.py`             | `@requires_torch_class` decorator |

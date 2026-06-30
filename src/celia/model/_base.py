@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 
-from celia._utils.dependecies import requires_torch_class
+from celia._utils.dependencies import requires_torch_class
 
 if TYPE_CHECKING:
     from torch import Tensor, nn
