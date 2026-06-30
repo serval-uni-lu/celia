@@ -6,7 +6,7 @@ from dice_ml.explainer_interfaces.dice_genetic import DiceGenetic
 from dice_ml.explainer_interfaces.dice_random import DiceRandom
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import ConfigurationError
 from celia.explainers import DiceClassifierExplainer, DiceRegressorExplainer
 from celia.model import SklearnModel
@@ -24,29 +24,29 @@ class TestDICERegressorExplainer:
             method,
             expected_cls,
             model_trained_with_encoded_data,
-            celia_public_data_with_encoded_data,
+            celia_data_with_encoded_data,
     ):
         explainer = DiceRegressorExplainer(
             model=model_trained_with_encoded_data,
-            data=celia_public_data_with_encoded_data,
+            data=celia_data_with_encoded_data,
             method=method,
         )
 
         assert isinstance(explainer, DiceRegressorExplainer)
         assert isinstance(explainer.explainer, expected_cls)
-        assert isinstance(explainer.data, PublicData)
+        assert isinstance(explainer.data, Data)
         assert isinstance(explainer.model, SklearnModel)
 
-    def test_dice_with_invalid_method(self, model_trained_with_encoded_data, celia_public_data_with_encoded_data):
+    def test_dice_with_invalid_method(self, model_trained_with_encoded_data, celia_data_with_encoded_data):
         with pytest.raises(Exception, match=r"Unsupported sample strategy .* provided\. Please choose one of .*"):
             DiceRegressorExplainer(
                 model=model_trained_with_encoded_data,
-                data=celia_public_data_with_encoded_data,
+                data=celia_data_with_encoded_data,
                 method="invalid_method",
             )
 
     def test_invalid_data_object(self, model_trained_with_encoded_data):
-        # Create a dummy data object that is not an instance of PublicData
+        # Create a dummy data object that is not an instance of Data
         class InvalidData:
             pass
 
@@ -59,12 +59,12 @@ class TestDICERegressorExplainer:
             )
 
         err = exc_info.value
-        assert re.search(r"requires data to be an instance of PublicData\.", str(err.message))
+        assert re.search(r"requires data to be an instance of Data\.", str(err.message))
         assert err.param == "data"
         assert err.hint.startswith("Please provide")
         assert err.config == {"data_type": "InvalidData"}
 
-#def test_model_without_predict(create_model_without_predict, dummy_celia_public_data_encoded):
+#def test_model_without_predict(create_model_without_predict, dummy_celia_data_encoded):
 
     def test_dice_regressor_counterfactuals_exclude_target_column(
         self,
@@ -80,7 +80,7 @@ class TestDICERegressorExplainer:
         tree.fit(X, y)
         model = SklearnModel(tree)
 
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name="target",
@@ -91,13 +91,13 @@ class TestDICERegressorExplainer:
             feasible_values={},
         )
 
-        explainer = DiceRegressorExplainer(model=model, data=public_data)
+        explainer = DiceRegressorExplainer(model=model, data=data)
 
         sample = X.iloc[[0]]
         current_pred = tree.predict(sample)[0]
         target_range = [current_pred + 0.05, current_pred + 0.5]
-        target_name = public_data.target_name
-        feature_columns = set(public_data.column_names)
+        target_name = data.target_name
+        feature_columns = set(data.column_names)
 
         results = explainer.generate_counterfactuals(sample, target_range=target_range)
 
@@ -125,28 +125,28 @@ class TestDICEClassifierExplainer:
             method,
             expected_cls,
             model_trained_classifier_stratified,
-            celia_public_data_classification,
+            celia_data_classification,
     ):
         explainer = DiceClassifierExplainer(
             model=model_trained_classifier_stratified,
-            data=celia_public_data_classification,
+            data=celia_data_classification,
             method=method,
         )
 
         assert isinstance(explainer, DiceClassifierExplainer)
         assert isinstance(explainer.explainer, expected_cls)
-        assert isinstance(explainer.data, PublicData)
+        assert isinstance(explainer.data, Data)
         assert isinstance(explainer.model, SklearnModel)
 
     def test_dice_classifier_with_invalid_method(
             self,
             model_trained_classifier_stratified,
-            celia_public_data_classification,
+            celia_data_classification,
     ):
         with pytest.raises(Exception, match=r"Unsupported sample strategy .* provided\. Please choose one of .*"):
             DiceClassifierExplainer(
                 model=model_trained_classifier_stratified,
-                data=celia_public_data_classification,
+                data=celia_data_classification,
                 method="invalid_method",
             )
 
@@ -163,7 +163,7 @@ class TestDICEClassifierExplainer:
             )
 
         err = exc_info.value
-        assert re.search(r"requires data to be an instance of PublicData\.", str(err.message))
+        assert re.search(r"requires data to be an instance of Data\.", str(err.message))
         assert err.param == "data"
         assert err.hint.startswith("Please provide")
         assert err.config == {"data_type": "InvalidData"}
@@ -182,7 +182,7 @@ class TestDICEClassifierExplainer:
         tree.fit(X, y)
         model = SklearnModel(tree)
 
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name="target",
@@ -193,11 +193,11 @@ class TestDICEClassifierExplainer:
             feasible_values={},
         )
 
-        explainer = DiceClassifierExplainer(model=model, data=public_data)
+        explainer = DiceClassifierExplainer(model=model, data=data)
 
         sample = X.iloc[[0]]
-        target_name = public_data.target_name
-        feature_columns = set(public_data.column_names)
+        target_name = data.target_name
+        feature_columns = set(data.column_names)
 
         results = explainer.generate_counterfactuals(sample)
 

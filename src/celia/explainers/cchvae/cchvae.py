@@ -10,7 +10,7 @@ from cchvae.types import VALID_FEATURE_TYPES, FeatureType
 
 from celia._utils.dependencies import requires_torch_class
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
@@ -40,12 +40,12 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
         *args: object,
         **kwargs: object,
     ) -> None:
-        if not isinstance(data, PublicData):
-            message = "CCHVAEClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):
+            message = "CCHVAEClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="CCHVAEClassifierExplainer.__init__",
             )
 
@@ -85,12 +85,12 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
         **kwargs: object,
     ) -> CCHVAE:
         """Train the underlying C-CHVAE model on the background data."""
-        if not isinstance(data, PublicData):  # defensive — already checked in __init__
-            message = "CCHVAEClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):  # defensive — already checked in __init__
+            message = "CCHVAEClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="CCHVAEClassifierExplainer._create_explainer",
             )
 
@@ -131,19 +131,19 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
     @staticmethod
     def _resolve_feature_types(
         override: dict[str, FeatureType] | None,
-        data: PublicData,
+        data: Data,
     ) -> dict[str, FeatureType] | None:
         """
-        Merge an explicit ``feature_types`` override with types inferred from ``PublicData``.
+        Merge an explicit ``feature_types`` override with types inferred from ``Data``.
 
         The returned dict is intentionally partial: any column that cannot be
-        classified from the override or from ``PublicData``'s
+        classified from the override or from ``Data``'s
         ``continuous_column_names`` / ``categorical_column_names`` is **omitted**
         so that C-CHVAE's own ``infer_schema`` handles it at construction time.
 
         Rules
         -----
-        1. If ``override`` is ``None`` and ``PublicData`` has no
+        1. If ``override`` is ``None`` and ``Data`` has no
            continuous/categorical classification, return ``None`` so C-CHVAE
            infers every column.
         2. Validate ``override``:
@@ -153,7 +153,7 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
                else ``ConfigurationError(param="feature_types")``.
         3. For every column in ``data.column_names`` not already supplied by
            the override:
-             - categorical (per PublicData)         -> ``"cat"``
+             - categorical (per Data)         -> ``"cat"``
              - continuous with integer dtype        -> ``"count"``
              - continuous with any other dtype      -> ``"real"``
              - unclassified                         -> left out (C-CHVAE infers)
@@ -163,7 +163,7 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
             if unknown:
                 message = (
                     f"`feature_types` contains column names that are not present in "
-                    f"PublicData.column_names: {sorted(unknown)}"
+                    f"Data.column_names: {sorted(unknown)}"
                 )
                 raise ConfigurationError(
                     message=message,

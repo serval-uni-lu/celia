@@ -1,7 +1,7 @@
 # CELIA
 ## Counterfactual Explanations for Tabular Data
-CELIA is a Python library designed to generate counterfactual explanations for Machine Learning models trained on 
-tabular data. It provides a user-friendly interface to create counterfactuals with multiple methods from the 
+CELIA is a Python library designed to generate counterfactual explanations for Machine Learning models trained on
+tabular data. It provides a user-friendly interface to create counterfactuals with multiple methods from the
 state-of-the-art that help understand model predictions and improve interpretability.
 
 Counterfactual explanations are a powerful tool in the field of explainable AI, allowing users to understand how
@@ -15,7 +15,7 @@ small changes to input features can lead to different predictions from a model.
 |      NNCE       |        Nearest Neighbor         |     Instance     |
 |      GRACE      |         Le at al., 2020         |    Heuristic     |
 |      OCEAN      |     Parmentier et al., 2021     |   Optimization   |
-|   CounterGAN    |     Nemirovsky et al., 2022     |    Generative    | 
+|   CounterGAN    |     Nemirovsky et al., 2022     |    Generative    |
 |      CLEAR      | White and d'Avila Garcez., 2020 |    Heuristic     |
 |     C-CHVAE     |     Pawelczyk et al., 2020      |    Generative    |
 |     BugDoc      |      Lourenco et al., 2020      |    Heuristic     |
@@ -81,10 +81,10 @@ model.fit(X_train, y_train)
 ### 2. Define constraints and wrap with CELIA
 
 ```python
-from celia.data import PublicData
+from celia.data import Data
 from celia.model import SklearnModel
 
-public_data = PublicData(
+data = Data(
     data=X_train,
     targets=y_train,
     target_name="approved",
@@ -105,19 +105,19 @@ from celia.explainers import DiceClassifierExplainer, GSGClassifierExplainer, NN
 sample = X_test.iloc[[0]]
 
 # DiCE — multiple diverse counterfactuals
-dice = DiceClassifierExplainer(model=sklearn_model, data=public_data, method="random")
+dice = DiceClassifierExplainer(model=sklearn_model, data=data, method="random")
 dice_cfs = dice.generate_counterfactuals(sample, total_CFs=3)
 
 # Growing Spheres — closest decision boundary crossing
-gsg = GSGClassifierExplainer(model=sklearn_model, data=public_data)
+gsg = GSGClassifierExplainer(model=sklearn_model, data=data)
 gsg_cf = gsg.generate_counterfactuals(sample)
 
 # NNCE — nearest real training examples with a different prediction
-nnce = NNCEClassifierExplainer(model=sklearn_model, data=public_data)
+nnce = NNCEClassifierExplainer(model=sklearn_model, data=data)
 nnce_cf = nnce.generate_counterfactuals(sample, n_counterfactuals=3)
 
 # BugDoc — debug-style logical rule counterfactuals
-bugdoc = BugDocClassifierExplainer(model=sklearn_model, data=public_data)
+bugdoc = BugDocClassifierExplainer(model=sklearn_model, data=data)
 bugdoc_cf = bugdoc.generate_counterfactuals(sample)
 ```
 

@@ -63,7 +63,7 @@ from typing import TYPE_CHECKING, Any
 import pandas as pd
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
@@ -82,7 +82,7 @@ class FooClassifierExplainer(ClassifierExplainer):
     ----------
     model : SklearnModel
         A CELIA ``SklearnModel`` wrapping a fitted classifier.
-    data : PublicData
+    data : Data
         Training data with metadata (feature names, types, constraints).
 
     References
@@ -103,12 +103,12 @@ class FooClassifierExplainer(ClassifierExplainer):
             )
 
         # 2. Validate data type
-        if not isinstance(data, PublicData):
-            message = "FooClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):
+            message = "FooClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="FooClassifierExplainer.__init__",
             )
 
@@ -392,7 +392,7 @@ These shared fixtures are available in all test files:
 |---------|--------|-------------|
 | `dummy_classification_dataframe` | `tests/conftest.py` | 8-row DataFrame with 3 numeric features and binary target |
 | `dummy_classification_dataframe_with_categories` | `tests/conftest.py` | 5-row DataFrame with 2 numeric + 1 categorical feature |
-| `celia_public_data_classification` | `tests/conftest.py` | `PublicData` wrapping the numeric classification data |
+| `celia_public_data_classification` | `tests/conftest.py` | `Data` wrapping the numeric classification data |
 | `model_trained_classifier` | `tests/conftest.py` | `SklearnModel` wrapping a `DummyClassifier` |
 | `model_trained_classifier_stratified` | `tests/conftest.py` | `SklearnModel` wrapping a `DecisionTreeClassifier` |
 | `torch_classification_model` | `tests/explainers/conftest.py` | Trained `TorchModel` (auto-skipped if torch unavailable) |

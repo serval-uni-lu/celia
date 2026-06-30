@@ -19,7 +19,7 @@ import pandas as pd
 from fastar import Explanation, FastAR, FeatureSpec
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers._base import ClassifierExplainer
@@ -37,7 +37,7 @@ class FastARClassifierExplainer(ClassifierExplainer):
     ----------
     model : BaseModel
         A CELIA model wrapping any classifier with ``predict_proba``.
-    data : PublicData
+    data : Data
         Training data with metadata (feature names, types, constraints).
         Must contain numeric features scaled to ``[-1, 1]``.
     target_class : int
@@ -67,12 +67,12 @@ class FastARClassifierExplainer(ClassifierExplainer):
         policy_path: str | Path | None = None,
         **kwargs: Any,
     ) -> None:
-        if not isinstance(data, PublicData):
-            message = "FastARClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):
+            message = "FastARClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="FastARClassifierExplainer.__init__",
             )
 
@@ -125,15 +125,15 @@ class FastARClassifierExplainer(ClassifierExplainer):
         data: BaseData,
         **kwargs: Any,
     ) -> FastAR:
-        """Build FeatureSpec from PublicData, create and train FastAR."""
-        public_data: PublicData = data
+        """Build FeatureSpec from Data, create and train FastAR."""
+        data_cast: Data = data
 
         feature_spec = FeatureSpec(
-            columns=public_data.column_names,
-            continuous=public_data.continuous_column_names or (),
-            immutable=public_data.immutable_column_names or (),
-            monotonic_increasing=public_data.monotonic_increasing_column_names or (),
-            correlated=public_data.correlated_features or (),
+            columns=data_cast.column_names,
+            continuous=data_cast.continuous_column_names or (),
+            immutable=data_cast.immutable_column_names or (),
+            monotonic_increasing=data_cast.monotonic_increasing_column_names or (),
+            correlated=data_cast.correlated_features or (),
         )
 
         fastar = FastAR(
@@ -143,7 +143,7 @@ class FastARClassifierExplainer(ClassifierExplainer):
             **kwargs,
         )
 
-        x_train = public_data.data.to_numpy().astype(np.float32)
+        x_train = data_cast.data.to_numpy().astype(np.float32)
 
         if self._policy_path is not None:
             fastar.load_policy(self._policy_path, x_train)

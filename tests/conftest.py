@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.tree import DecisionTreeClassifier
 from celia.model import SklearnModel
-from celia.data import PublicData
+from celia.data import Data
 
 _PANDAS_MAJOR = int(pd.__version__.split(".", 1)[0])
 
@@ -100,7 +100,7 @@ def dummy_test_regression_dataframe_encoded() -> pd.DataFrame:
     return pd.DataFrame(dataset)
 
 @pytest.fixture
-def celia_public_data_without_encoded_data(dummy_regression_dataframe) -> PublicData:
+def celia_data_without_encoded_data(dummy_regression_dataframe) -> Data:
     data : pd.DataFrame = dummy_regression_dataframe.drop(columns=['target'])
     targets : pd.Series = dummy_regression_dataframe['target']
     target_name : str = 'target'
@@ -112,7 +112,7 @@ def celia_public_data_without_encoded_data(dummy_regression_dataframe) -> Public
     immutable_column_names: list[str] = ['feature1']
     feasible_values : dict = build_feasible_values(dummy_regression_dataframe)
 
-    return PublicData(
+    return Data(
         data=data,
         targets=targets,
         target_name=target_name,
@@ -124,7 +124,7 @@ def celia_public_data_without_encoded_data(dummy_regression_dataframe) -> Public
     )
 
 @pytest.fixture
-def celia_public_data_with_encoded_data(dummy_regression_dataframe_encoded) -> PublicData:
+def celia_data_with_encoded_data(dummy_regression_dataframe_encoded) -> Data:
     data : pd.DataFrame = dummy_regression_dataframe_encoded.drop(columns=['target'])
     targets : pd.Series = dummy_regression_dataframe_encoded['target']
     target_name : str = 'target'
@@ -136,7 +136,7 @@ def celia_public_data_with_encoded_data(dummy_regression_dataframe_encoded) -> P
     immutable_column_names: list[str] = ['feature1']
     feasible_values : dict = build_feasible_values(dummy_regression_dataframe_encoded)
 
-    return PublicData(
+    return Data(
         data=data,
         targets=targets,
         target_name=target_name,
@@ -197,10 +197,10 @@ def dummy_classification_dataframe_with_categories() -> pd.DataFrame:
 
 
 @pytest.fixture
-def celia_public_data_classification(dummy_classification_dataframe) -> PublicData:
+def celia_data_classification(dummy_classification_dataframe) -> Data:
     data = dummy_classification_dataframe.drop(columns=['target'])
     targets = dummy_classification_dataframe['target']
-    return PublicData(
+    return Data(
         data=data,
         targets=targets,
         target_name='target',
@@ -213,12 +213,12 @@ def celia_public_data_classification(dummy_classification_dataframe) -> PublicDa
 
 
 @pytest.fixture
-def celia_public_data_classification_with_categories(
+def celia_data_classification_with_categories(
     dummy_classification_dataframe_with_categories,
-) -> PublicData:
+) -> Data:
     data = dummy_classification_dataframe_with_categories.drop(columns=['target'])
     targets = dummy_classification_dataframe_with_categories['target']
-    return PublicData(
+    return Data(
         data=data,
         targets=targets,
         target_name='target',

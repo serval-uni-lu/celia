@@ -7,7 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 from celia.errors import ConfigurationError
 from celia.explainers.clear import CLEARClassifierExplainer
 from celia.model import SklearnModel
-from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_public_data
+from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_data
 
 
 def _fit_tree_model(df) -> SklearnModel:
@@ -38,11 +38,11 @@ class TestCLEARClassifier(ClassifierExplainerTests):
         instead — exercising ``_validate_sample``.
         """
         model = _fit_tree_model(dummy_classification_dataframe)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = CLEARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -60,12 +60,12 @@ class TestCLEARClassifier(ClassifierExplainerTests):
         """ConfigurationError(param='data') when data contains non-numeric columns at init."""
         model = _fit_tree_model(dummy_classification_dataframe)
 
-        public_data, _ = _make_public_data(
+        data, _ = _make_data(
             dummy_classification_dataframe_with_categories, immutable=[]
         )
 
         with pytest.raises(ConfigurationError) as exc_info:
-            CLEARClassifierExplainer(model=model, data=public_data, **self.explainer_kwargs)
+            CLEARClassifierExplainer(model=model, data=data, **self.explainer_kwargs)
 
         assert exc_info.value.param == "data"
 
@@ -76,22 +76,22 @@ class TestCLEARClassifier(ClassifierExplainerTests):
             dummy_classification_dataframe["target"],
         )
         model = SklearnModel(ridge)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            CLEARClassifierExplainer(model=model, data=public_data, **self.explainer_kwargs)
+            CLEARClassifierExplainer(model=model, data=data, **self.explainer_kwargs)
 
         assert exc_info.value.param == "model"
 
     def test_invalid_num_classes_raises_error(self, dummy_classification_dataframe):
         """ConfigurationError(param='num_classes') when num_classes < 2."""
         model = _fit_tree_model(dummy_classification_dataframe)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             CLEARClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 num_classes=1,
             )
 
@@ -100,12 +100,12 @@ class TestCLEARClassifier(ClassifierExplainerTests):
     def test_multiclass_without_class_labels_raises_error(self, dummy_classification_dataframe):
         """ConfigurationError(param='class_labels') when num_classes > 2 and class_labels missing."""
         model = _fit_tree_model(dummy_classification_dataframe)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             CLEARClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 num_classes=3,
             )
 
@@ -114,11 +114,11 @@ class TestCLEARClassifier(ClassifierExplainerTests):
     def test_clear_kwargs_forwarded(self, dummy_classification_dataframe):
         """CLEAR-specific kwargs are stored on the explainer instance."""
         model = _fit_tree_model(dummy_classification_dataframe)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         explainer = CLEARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             num_classes=2,
             number_of_synthetic_samples=123,
             random_seed=7,

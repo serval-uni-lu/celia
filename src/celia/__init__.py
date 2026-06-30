@@ -4,7 +4,7 @@ import importlib.metadata
 from typing import Any
 
 from .counterfactuals import Counterfactual
-from .data import BaseData, PublicData
+from .data import BaseData, Data
 from .errors import (
     CELIAError,
     ConfigurationError,
@@ -47,7 +47,7 @@ __all__ = [
     "TorchModel",
     # data
     "BaseData",
-    "PublicData",
+    "Data",
     # counterfactuals
     "Counterfactual",
     # errors

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
@@ -27,7 +27,7 @@ class GSGClassifierExplainer(ClassifierExplainer):
     ----------
     model : BaseModel
         A CELIA model wrapper (``SklearnModel`` or ``TorchModel``).
-    data : PublicData
+    data : Data
         Training data with metadata (feature names, types, constraints).
         All features must be numeric.
 
@@ -39,12 +39,12 @@ class GSGClassifierExplainer(ClassifierExplainer):
     """
 
     def __init__(self, model: BaseModel, data: BaseData, *args: object, **kwargs: object) -> None:
-        if not isinstance(data, PublicData):
-            message = "GSGClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):
+            message = "GSGClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="GSGClassifierExplainer.__init__",
             )
 
@@ -71,17 +71,17 @@ class GSGClassifierExplainer(ClassifierExplainer):
         *args,
         **kwargs,
     ) -> GSG:
-        data_public: PublicData = data  # type: ignore[assignment]
+        data_cast: Data = data  # type: ignore[assignment]
 
-        feature_order = data_public.column_names
-        immutable_features = data_public.immutable_column_names or []
+        feature_order = data_cast.column_names
+        immutable_features = data_cast.immutable_column_names or []
         immutable_set = set(immutable_features)
         mutable_features = [c for c in feature_order if c not in immutable_set]
-        continuous_features = data_public.continuous_column_names or []
+        continuous_features = data_cast.continuous_column_names or []
         binary_features = [
             col
             for col in feature_order
-            if data_public.data[col].nunique() == 2  # noqa: PLR2004
+            if data_cast.data[col].nunique() == 2  # noqa: PLR2004
         ]
 
         n_samples = kwargs.get("n_samples", 1000)

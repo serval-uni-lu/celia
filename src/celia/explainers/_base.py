@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, InstancesAreWithinRangeError
 from celia.model import BaseModel
@@ -193,10 +193,10 @@ class BaseExplainer(ABC):
             If the sample does not contain the columns defined in self.data.
         """
 
-        if isinstance(self.data, PublicData):
+        if isinstance(self.data, Data):
             required_columns = self.data.column_names
         else:
-            message = f"Data must be an instance of PublicData, got {type(self.data)}"
+            message = f"Data must be an instance of Data, got {type(self.data)}"
             raise ConfigurationError(message)
 
         sample_columns = list(sample.index) if isinstance(sample, pd.Series) else list(sample.columns)

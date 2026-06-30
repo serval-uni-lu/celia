@@ -6,7 +6,7 @@ import pandas as pd
 
 from celia._utils.dependencies import requires_torch_class
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError
 from celia.explainers import ClassifierExplainer
@@ -342,11 +342,11 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                 source="GRACEClassifierExplainer.__init__",
             )
 
-        if not isinstance(data, PublicData):
+        if not isinstance(data, Data):
             raise ConfigurationError(
-                message="GRACEClassifierExplainer requires data to be an instance of PublicData.",
+                message="GRACEClassifierExplainer requires data to be an instance of Data.",
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="GRACEClassifierExplainer.__init__",
             )
 
@@ -467,7 +467,7 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                     raise ConfigurationError(
                         message=message,
                         param=feature,
-                        source="PublicData",
+                        source="Data",
                     ) from e
 
         return feature_min_bounds, feature_max_bounds

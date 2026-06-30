@@ -8,11 +8,11 @@ import pytest
 from sklearn.ensemble import RandomForestClassifier
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers.ocean import OCEANClassifierExplainer
 from celia.model import BaseModel, SklearnModel
-from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_public_data
+from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_data
 
 
 class TestOCEANMissingDependencies:
@@ -25,18 +25,18 @@ class TestOCEANMissingDependencies:
         rf = RandomForestClassifier(n_estimators=5, random_state=0)
         rf.fit(X, y)
         model = SklearnModel(rf)
-        public_data, _ = _make_public_data(df, immutable=[])
-        return model, public_data
+        data, _ = _make_data(df, immutable=[])
+        return model, data
 
     def test_missing_both_raises_configuration_error(self, dummy_classification_dataframe, monkeypatch):
         """Both oceanpy and gurobipy absent → ConfigurationError listing both."""
         monkeypatch.setitem(sys.modules, "ocean", None)
         monkeypatch.setitem(sys.modules, "gurobipy", None)
 
-        model, public_data = self._make_minimal_args(dummy_classification_dataframe)
+        model, data = self._make_minimal_args(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            OCEANClassifierExplainer(model=model, data=public_data)
+            OCEANClassifierExplainer(model=model, data=data)
 
         err = exc_info.value
         assert err.param == "ocean"
@@ -49,10 +49,10 @@ class TestOCEANMissingDependencies:
         """Only oceanpy absent → ConfigurationError mentioning oceanpy."""
         monkeypatch.setitem(sys.modules, "ocean", None)
 
-        model, public_data = self._make_minimal_args(dummy_classification_dataframe)
+        model, data = self._make_minimal_args(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            OCEANClassifierExplainer(model=model, data=public_data)
+            OCEANClassifierExplainer(model=model, data=data)
 
         err = exc_info.value
         assert err.param == "ocean"
@@ -66,10 +66,10 @@ class TestOCEANMissingDependencies:
         monkeypatch.setitem(sys.modules, "ocean", MagicMock())
         monkeypatch.setitem(sys.modules, "gurobipy", None)
 
-        model, public_data = self._make_minimal_args(dummy_classification_dataframe)
+        model, data = self._make_minimal_args(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            OCEANClassifierExplainer(model=model, data=public_data)
+            OCEANClassifierExplainer(model=model, data=data)
 
         err = exc_info.value
         assert err.param == "ocean"
@@ -127,12 +127,12 @@ class TestOCEANClassifier(ClassifierExplainerTests):
         """
         model = self._get_model(dummy_classification_dataframe, request)
         all_features = dummy_classification_dataframe.drop(columns=["target"]).columns.tolist()
-        public_data, X = _make_public_data(
+        data, X = _make_data(
             dummy_classification_dataframe,
             immutable=all_features,
         )
 
-        explainer = self.explainer_class(model=model, data=public_data, **self.explainer_kwargs)
+        explainer = self.explainer_class(model=model, data=data, **self.explainer_kwargs)
         sample = X.iloc[[0]]
 
         with pytest.raises(NoCounterfactualsFoundError):
@@ -146,9 +146,9 @@ class TestOCEANClassifier(ClassifierExplainerTests):
         rf.fit(X, y)
         model = SklearnModel(rf)
 
-        public_data, X_features = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X_features = _make_data(dummy_classification_dataframe, immutable=[])
 
-        explainer = OCEANClassifierExplainer(model=model, data=public_data)
+        explainer = OCEANClassifierExplainer(model=model, data=data)
         sample = X_features.iloc[[0]]
         result = explainer.generate_counterfactuals(sample, **self.generate_kwargs)
 
@@ -177,20 +177,20 @@ class TestOCEANClassifier(ClassifierExplainerTests):
         rf.fit(X_numeric, y)
         model = SklearnModel(rf)
 
-        # PublicData includes the non-numeric column
-        public_data, _ = _make_public_data(df, immutable=[])
+        # Data includes the non-numeric column
+        data, _ = _make_data(df, immutable=[])
 
         with pytest.raises(ConfigurationError) as exc_info:
-            OCEANClassifierExplainer(model=model, data=public_data)
+            OCEANClassifierExplainer(model=model, data=data)
 
         assert exc_info.value.param == "data"
 
     def test_target_class_auto_flip_binary(self, dummy_classification_dataframe, request):
         """For binary classification, target class is auto-determined as the opposite."""
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
-        explainer = OCEANClassifierExplainer(model=model, data=public_data)
+        explainer = OCEANClassifierExplainer(model=model, data=data)
         sample = X.iloc[[0]]
         result = explainer.generate_counterfactuals(sample, **self.generate_kwargs)
 
@@ -200,9 +200,9 @@ class TestOCEANClassifier(ClassifierExplainerTests):
     def test_explicit_target_class(self, dummy_classification_dataframe, request):
         """User can explicitly provide ``target_class``."""
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
-        explainer = OCEANClassifierExplainer(model=model, data=public_data)
+        explainer = OCEANClassifierExplainer(model=model, data=data)
         sample = X.iloc[[0]]
         result = explainer.generate_counterfactuals(
             sample,

@@ -6,7 +6,7 @@ import pytest
 
 from celia.errors import ConfigurationError
 from celia.explainers.countergan import CounterGANClassifierExplainer
-from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_public_data
+from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_data
 
 
 class TestCounterGANClassifier(ClassifierExplainerTests):
@@ -30,11 +30,11 @@ class TestCounterGANClassifier(ClassifierExplainerTests):
         (the GAN needs numeric data to train), so we init with numeric data and
         pass a non-numeric sample instead.
         """
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = CounterGANClassifierExplainer(
             model=torch_classification_model,
-            data=public_data,
+            data=data,
             desired_class=1,
         )
 
@@ -48,12 +48,12 @@ class TestCounterGANClassifier(ClassifierExplainerTests):
         self, dummy_classification_dataframe_with_categories, torch_classification_model
     ):
         """ConfigurationError(param='data') when data contains non-numeric columns at init."""
-        public_data, _ = _make_public_data(dummy_classification_dataframe_with_categories, immutable=[])
+        data, _ = _make_data(dummy_classification_dataframe_with_categories, immutable=[])
 
         with pytest.raises(ConfigurationError) as exc_info:
             CounterGANClassifierExplainer(
                 model=torch_classification_model,
-                data=public_data,
+                data=data,
                 desired_class=1,
             )
 
@@ -61,21 +61,21 @@ class TestCounterGANClassifier(ClassifierExplainerTests):
 
     def test_desired_class_missing_raises_error(self, dummy_classification_dataframe, torch_classification_model):
         """ConfigurationError(param='desired_class') when desired_class is omitted."""
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            CounterGANClassifierExplainer(model=torch_classification_model, data=public_data)
+            CounterGANClassifierExplainer(model=torch_classification_model, data=data)
 
         assert exc_info.value.param == "desired_class"
 
     def test_desired_class_invalid_value_raises_error(self, dummy_classification_dataframe, torch_classification_model):
         """ConfigurationError(param='desired_class') when desired_class is not in data targets."""
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             CounterGANClassifierExplainer(
                 model=torch_classification_model,
-                data=public_data,
+                data=data,
                 desired_class=999,
             )
 
@@ -83,13 +83,13 @@ class TestCounterGANClassifier(ClassifierExplainerTests):
 
     def test_desired_class_valid_for_each_class(self, dummy_classification_dataframe, torch_classification_model):
         """Explainer initializes successfully for every valid class in targets."""
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
-        unique_classes = np.unique(public_data.targets).tolist()
+        data, _ = _make_data(dummy_classification_dataframe)
+        unique_classes = np.unique(data.targets).tolist()
 
         for cls in unique_classes:
             explainer = CounterGANClassifierExplainer(
                 model=torch_classification_model,
-                data=public_data,
+                data=data,
                 desired_class=cls,
             )
             assert explainer.desired_class == cls

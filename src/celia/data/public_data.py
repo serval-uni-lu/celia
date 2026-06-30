@@ -7,9 +7,9 @@ from celia.data._base import BaseData
 from celia.errors import ConfigurationError
 
 
-class PublicData(BaseData):
+class Data(BaseData):
     """
-    Concrete implementation of BaseData for public data.
+    Concrete implementation of BaseData for tabular data.
     This class wraps the training data, labels, and metadata required by CELIA explainers.
     It provides structured access to feature types, immutability constraints, and
     feasible values, and performs internal consistency validation upon instantiation.
@@ -51,6 +51,11 @@ class PublicData(BaseData):
         List of ``(cause, effect, delta)`` triples describing mechanical couplings
         between features: whenever ``cause`` is increased, ``effect`` is also increased
         by ``delta``. Both ``cause`` and ``effect`` must exist in the dataset columns.
+
+    Note
+    ----
+    Not all methods in CELIA support all of these metadata fields. For example, some explainers may ignore monotonicity
+    or correlation constraints. Please consult whether your chosen explainer supports these features.
 
     Raises
     ------

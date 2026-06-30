@@ -8,7 +8,7 @@ from dice_ml.diverse_counterfactuals import (
 )
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer, RegressorExplainer
 from celia.model import BaseModel
@@ -18,7 +18,7 @@ class DiceRegressorExplainer(RegressorExplainer):
     """
     Concrete implementation of RegressorExplainer for Diverse Counterfactuals (DiCE).
     This class wraps the DiCE method to generate counterfactual explanations
-    for regression tasks using public training data. It enforces the use of PublicData
+    for regression tasks using public training data. It enforces the use of Data
     and validates that the input data meets the expected structure required by the explainer.
 
     Parameters
@@ -27,7 +27,7 @@ class DiceRegressorExplainer(RegressorExplainer):
         The predictive regression model to be explained. Must implement the BaseModel interface
         with a `predict` method.
 
-    data : PublicData
+    data : Data
         The public dataset object, containing the training data, target labels, and metadata
         such as feature types and feasible values.
 
@@ -40,14 +40,14 @@ class DiceRegressorExplainer(RegressorExplainer):
     Raises
     ------
     ValueError
-        If the provided data is not an instance of PublicData.
+        If the provided data is not an instance of Data.
 
     Attributes
     ----------
     model : BaseModel
         The regression model to be explained.
 
-    data : PublicData
+    data : Data
         The dataset used to generate counterfactual explanations.
 
     explainer : dice_ml.Dice
@@ -55,13 +55,13 @@ class DiceRegressorExplainer(RegressorExplainer):
         and target variable for regression tasks.
     """
 
-    def __init__(self, model: BaseModel, data: PublicData, *args: object, **kwargs: object) -> None:
-        if not isinstance(data, PublicData):
-            message = "DiceRegressorExplainer requires data to be an instance of PublicData."
+    def __init__(self, model: BaseModel, data: Data, *args: object, **kwargs: object) -> None:
+        if not isinstance(data, Data):
+            message = "DiceRegressorExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                hint="Please provide a PublicData object with appropriate metadata.",
+                hint="Please provide a Data object with appropriate metadata.",
                 config={"data_type": type(data).__name__},
             )
         super().__init__(model, data, *args, **kwargs)
@@ -69,7 +69,7 @@ class DiceRegressorExplainer(RegressorExplainer):
     def _create_explainer(
         self,
         model: BaseModel,
-        data: PublicData,
+        data: Data,
         *args: object,
         **kwargs: object,
     ) -> Any:
@@ -210,7 +210,7 @@ class DiceClassifierExplainer(ClassifierExplainer):
     Concrete implementation of ClassifierExplainer for Diverse Counterfactuals (DiCE).
 
     This class wraps the DiCE method to generate counterfactual explanations
-    for classification tasks using public training data. It enforces the use of PublicData
+    for classification tasks using public training data. It enforces the use of Data
     and validates that the input data meets the expected structure required by the explainer.
 
     Parameters
@@ -219,7 +219,7 @@ class DiceClassifierExplainer(ClassifierExplainer):
         The predictive classification model to be explained. Must implement the BaseModel interface
         with a ``predict`` method.
 
-    data : PublicData
+    data : Data
         The public dataset object, containing the training data, target labels, and metadata
         such as feature types and feasible values.
 
@@ -232,27 +232,27 @@ class DiceClassifierExplainer(ClassifierExplainer):
     Raises
     ------
     ConfigurationError
-        If the provided data is not an instance of PublicData.
+        If the provided data is not an instance of Data.
 
     Attributes
     ----------
     model : BaseModel
         The classification model to be explained.
 
-    data : PublicData
+    data : Data
         The dataset used to generate counterfactual explanations.
 
     explainer : dice_ml.Dice
         Instance of the DiCE explainer initialized for classification tasks.
     """
 
-    def __init__(self, model: BaseModel, data: PublicData, *args: object, **kwargs: object) -> None:
-        if not isinstance(data, PublicData):
-            message = "DiceClassifierExplainer requires data to be an instance of PublicData."
+    def __init__(self, model: BaseModel, data: Data, *args: object, **kwargs: object) -> None:
+        if not isinstance(data, Data):
+            message = "DiceClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                hint="Please provide a PublicData object with appropriate metadata.",
+                hint="Please provide a Data object with appropriate metadata.",
                 config={"data_type": type(data).__name__},
             )
         super().__init__(model, data, *args, **kwargs)
@@ -260,7 +260,7 @@ class DiceClassifierExplainer(ClassifierExplainer):
     def _create_explainer(
         self,
         model: BaseModel,
-        data: PublicData,
+        data: Data,
         *args: object,
         **kwargs: object,
     ) -> Any:
