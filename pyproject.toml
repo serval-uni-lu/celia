@@ -54,6 +54,7 @@ fastar = { git = "https://github.com/alanpar97/FastAR.git" }
 dev = [
     "category-encoders>=2.7.0",
     "furo>=2025.9.25",
+    "prek>=0.4.5",
     "pytest>=8.3.5",
     "ruff>=0.14.0",
     "sphinx>=8.2.3",
