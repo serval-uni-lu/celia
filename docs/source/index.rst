@@ -68,4 +68,5 @@ Implemented methods
    :maxdepth: 2
 
    user_guide/index
+   examples/index
    api/index
