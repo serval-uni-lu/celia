@@ -538,3 +538,28 @@ class TestData:
             correlated_features=correlated
         )
         assert len(data.correlated_features) == 2
+
+    def test_correlated_non_string_cause_effect_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError when cause or effect in correlated_features is not a string."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                correlated_features=[(123, "income", 0.05)]
+            )
+
+        err = exc_info.value
+        assert err.param == "correlated_features"
+        assert "must be strings" in err.message
+
+    def test_series_with_no_name_defaults_to_target(self, dummy_dataframe, valid_feasible_values):
+        """When targets is a Series with name=None and target_name is omitted, default to 'target'."""
+        series = pd.Series([0, 1, 0, 1, 0])
+        assert series.name is None
+
+        data = create_data_with_overrides(
+            dummy_dataframe, valid_feasible_values,
+            targets=series,
+            target_name=None,
+        )
+        assert data.target_name == "target"
+        assert data.targets.name == "target"

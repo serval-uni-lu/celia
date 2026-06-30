@@ -212,3 +212,35 @@ class TestOCEANClassifier(ClassifierExplainerTests):
 
         assert isinstance(result, Counterfactual)
         assert result.counterfactual_prediction == 1
+
+    def test_validate_sample_non_numeric_raises(self, dummy_classification_dataframe, request):
+        """_validate_sample rejects samples containing non-numeric columns."""
+        model = self._get_model(dummy_classification_dataframe, request)
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
+
+        explainer = OCEANClassifierExplainer(model=model, data=data)
+
+        bad_sample = X.iloc[[0]].copy()
+        bad_sample["feature3"] = "non_numeric"
+
+        with pytest.raises(ConfigurationError) as exc_info:
+            explainer.generate_counterfactuals(bad_sample, **self.generate_kwargs)
+
+        assert exc_info.value.param == "sample"
+        assert "numeric" in exc_info.value.message
+
+    def test_multiclass_without_target_class_raises(self, dummy_classification_dataframe, request):
+        """_determine_target_class raises ConfigurationError for multi-class without target_class."""
+        from unittest.mock import PropertyMock, patch
+
+        model = self._get_model(dummy_classification_dataframe, request)
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
+
+        explainer = OCEANClassifierExplainer(model=model, data=data)
+
+        sample = X.iloc[[0]]
+        with patch.object(type(explainer.explainer), "n_classes", new_callable=PropertyMock, return_value=3):
+            with pytest.raises(ConfigurationError) as exc_info:
+                explainer.generate_counterfactuals(sample, **self.generate_kwargs)
+
+        assert exc_info.value.param == "target_class"

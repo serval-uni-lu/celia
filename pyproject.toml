@@ -50,6 +50,19 @@ cchvae = { git = "https://github.com/alanpar97/c-chvae.git" }
 bugdoc = { git = "https://github.com/VIDA-NYU/BugDoc.git", subdirectory = "bugdoc_api", rev = "standalone"}
 fastar = { git = "https://github.com/alanpar97/FastAR.git" }
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "torch: marks tests that require PyTorch",
+]
+filterwarnings = [
+    "ignore::statsmodels.tools.sm_exceptions.PerfectSeparationWarning",
+    "ignore:overflow encountered in exp:RuntimeWarning:statsmodels",
+    "ignore:divide by zero encountered in log:RuntimeWarning:statsmodels",
+    "ignore:X does not have valid feature names:UserWarning:sklearn",
+]
+
 [dependency-groups]
 dev = [
     "category-encoders>=2.7.0",
