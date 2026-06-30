@@ -22,7 +22,6 @@ __all__ = [
     "BaseExplainer",
     "RegressorExplainer",
     "ClassifierExplainer",
-    "CertifaiRegressorExplainer",
     "CCHVAEClassifierExplainer",
     "CounterGANClassifierExplainer",
     "DiceClassifierExplainer",

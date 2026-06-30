@@ -11,7 +11,6 @@ small changes to input features can lead to different predictions from a model.
 |   Method Name   |            Reference            | Achieving Method |
 |:---------------:|:-------------------------------:|:----------------:|
 |      DiCE       |      Mothilal et al., 2020      |   Optimization   |
-|    CERTIFAI     |       Sharma et al., 2019       |    Heuristic     |
 | Growing Spheres |       Laugel et al., 2018       |   Optimization   |
 |      NNCE       |        Nearest Neighbor         |     Instance     |
 |      GRACE      |         Le at al., 2020         |    Heuristic     |
