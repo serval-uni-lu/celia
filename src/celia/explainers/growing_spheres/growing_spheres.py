@@ -43,6 +43,10 @@ class GrowingSpheresClassifierExplainer(ClassifierExplainer):
     (2018). Comparison-based Inverse Classification for Interpretability
     in Machine Learning. IPMU.
 
+    Note
+    ----
+    **Supported constraints:** immutable features.
+
     Examples
     --------
     >>> from celia import Data, SklearnModel, GrowingSpheresClassifierExplainer

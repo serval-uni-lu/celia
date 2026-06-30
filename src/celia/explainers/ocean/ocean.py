@@ -48,6 +48,10 @@ class OCEANClassifierExplainer(ClassifierExplainer):
     in Tree Ensembles. Proceedings of the 38th International Conference on
     Machine Learning (ICML).
 
+    Note
+    ----
+    **Supported constraints:** immutable features, feasible value ranges.
+
     Examples
     --------
     >>> from celia import Data, SklearnModel, OCEANClassifierExplainer

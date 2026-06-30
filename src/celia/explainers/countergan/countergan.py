@@ -60,6 +60,10 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
     recourse and interpretability using residual GANs. Uncertainty in
     Artificial Intelligence (pp. 1488-1497). PMLR.
 
+    Note
+    ----
+    **Supported constraints:** immutable features.
+
     Examples
     --------
     >>> from celia import Data, TorchModel, CounterGANClassifierExplainer

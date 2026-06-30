@@ -357,6 +357,10 @@ class GRACEClassifierExplainer(ClassifierExplainer):
     26th ACM SIGKDD Int’l Conf. on Knowledge Discovery and Data Mining
     (KDD), 2020.
 
+    Note
+    ----
+    **Supported constraints:** feasible value ranges.
+
     Examples
     --------
     >>> from celia import Data, TorchModel, GRACEClassifierExplainer

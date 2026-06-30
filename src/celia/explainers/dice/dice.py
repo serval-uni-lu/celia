@@ -51,8 +51,12 @@ class DiceRegressorExplainer(RegressorExplainer):
         The dataset used to generate counterfactual explanations.
 
     explainer : dice_ml.Dice
-        Instance of the NearestNeighborCE class initialized with training data, model,
+        Instance of the DiCE explainer initialized with training data, model,
         and target variable for regression tasks.
+
+    Note
+    ----
+    **Supported constraints:** immutable features, feasible value ranges.
     """
 
     def __init__(self, model: BaseModel, data: Data, *args: object, **kwargs: object) -> None:
@@ -244,6 +248,10 @@ class DiceClassifierExplainer(ClassifierExplainer):
 
     explainer : dice_ml.Dice
         Instance of the DiCE explainer initialized for classification tasks.
+
+    Note
+    ----
+    **Supported constraints:** immutable features, feasible value ranges.
     """
 
     def __init__(self, model: BaseModel, data: Data, *args: object, **kwargs: object) -> None:

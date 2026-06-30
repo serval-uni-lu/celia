@@ -74,6 +74,12 @@ class CLEARClassifierExplainer(ClassifierExplainer):
     Measurable Counterfactual Local Explanations via Regression.
     In *ECAI 2020* (pp. 1529-1536). IOS Press.
 
+    Note
+    ----
+    **Supported constraints:** none.
+    Immutable features, feasible value ranges, monotonic, and correlated
+    feature constraints are not supported by CLEAR.
+
     Examples
     --------
     >>> from celia import Data, SklearnModel, CLEARClassifierExplainer

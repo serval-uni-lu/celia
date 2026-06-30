@@ -328,6 +328,10 @@ class NNCERegressorExplainer(RegressorExplainer):
     ConfigurationError
         If ``data`` is not an instance of ``Data``.
 
+    Note
+    ----
+    **Supported constraints:** immutable features.
+
     Examples
     --------
     >>> from celia import Data, SklearnModel, NNCERegressorExplainer
@@ -467,6 +471,11 @@ class NNCEClassifierExplainer(ClassifierExplainer):
     explainer : NearestNeighborCE
         Instance of the NearestNeighborCE class initialized with training data, model,
         and target variable for classification tasks.
+
+    Note
+    ----
+    **Supported constraints:** immutable features.
+
     """
 
     def __init__(self, model: BaseModel, data: Data, *args: object, **kwargs: object) -> None:

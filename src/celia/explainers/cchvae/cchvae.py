@@ -69,6 +69,10 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
     Pawelczyk, M., Broelemann, K., & Kasneci, G. (2020). Learning
     Model-Agnostic Counterfactual Explanations for Tabular Data. WWW '20.
 
+    Note
+    ----
+    **Supported constraints:** immutable features.
+
     Examples
     --------
     >>> from celia import Data, SklearnModel, CCHVAEClassifierExplainer

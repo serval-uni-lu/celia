@@ -65,6 +65,11 @@ class FastARClassifierExplainer(ClassifierExplainer):
     models. In Proceedings of the AAAI Conference on Artificial
     Intelligence (Vol. 36, No. 8, pp. 8512-8519).
 
+    Note
+    ----
+    **Supported constraints:** immutable features, monotonic increasing
+    features, correlated features.
+
     Examples
     --------
     >>> from celia import Data, SklearnModel, FastARClassifierExplainer

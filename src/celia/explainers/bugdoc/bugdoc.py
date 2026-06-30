@@ -50,6 +50,12 @@ class BugDocRegressorExplainer(RegressorExplainer):
 
     data : Data
         The dataset used to generate counterfactual explanations.
+
+    Note
+    ----
+    **Supported constraints:** immutable features.
+    Feasible value ranges, monotonic, and correlated feature constraints
+    are not supported.
     """
 
     def __init__(self, model: BaseModel, data: Data, *args, **kwargs):
@@ -204,6 +210,10 @@ class BugDocClassifierExplainer(ClassifierExplainer):
 
     data : Data
         The dataset used to generate counterfactual explanations.
+
+    Note
+    ----
+    **Supported constraints:** immutable features.
     """
 
     def __init__(self, model: BaseModel, data: Data, *args, **kwargs):
