@@ -57,7 +57,7 @@ html_theme_options = {
     "source_repository": "https://github.com/serval-uni-lu/celia/",
     "source_branch": "main",
     "source_directory": "docs/source/",
-    "sidebar_hide_name": True,
+    "sidebar_hide_name": False,
     "light_css_variables": {
         "color-brand-primary": "#30B08E",
         "color-brand-content": "#1A3A3A",
