@@ -38,6 +38,10 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
 
+      - name: Install libomp (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libomp
+
       - name: Install dependencies
         run: uv sync --group dev --all-extras
 
@@ -61,5 +65,5 @@ jobs:
 
       - name: Verify wheel installs
         run: |
-          pip install dist/*.whl
-          python -c "import celia; print(celia.__version__)"
+          uv pip install dist/*.whl
+          uv run python -c "import celia; print(celia.__version__)"
