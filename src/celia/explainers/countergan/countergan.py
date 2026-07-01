@@ -8,7 +8,7 @@ from countergan import CounterGAN
 from sklearn.model_selection import train_test_split
 
 from celia.counterfactuals import Counterfactual
-from celia.data import BaseData, PublicData
+from celia.data import BaseData, Data
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
 from celia.model import BaseModel, TorchModel
@@ -28,7 +28,7 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
     ----------
     model : TorchModel
         A CELIA ``TorchModel`` wrapper around a ``torch.nn.Module``.
-    data : PublicData
+    data : Data
         Training data with metadata (feature names, types, constraints).
         All features must be numeric.
     desired_class : int
@@ -46,20 +46,40 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
         CounterGAN backend: ``"torch"`` or ``"tensorflow"``. Auto-detected
         when ``None``.
 
+    Raises
+    ------
+    ConfigurationError
+        If ``model`` is not a ``TorchModel``, ``data`` is not a ``Data``
+        instance, the data contains non-numeric columns, or
+        ``desired_class`` is not found in the training targets.
+
     References
     ----------
     Nemirovsky, D., Thiebaut, N., Xu, Y., & Gupta, A.
-    (2022, August). CounteRGAN: Generating counterfactuals for real-time recourse and interpretability using residual GANs.
-    Uncertainty in Artificial Intelligence (pp. 1488-1497). PMLR.
+    (2022, August). CounteRGAN: Generating counterfactuals for real-time
+    recourse and interpretability using residual GANs. Uncertainty in
+    Artificial Intelligence (pp. 1488-1497). PMLR.
+
+    Note
+    ----
+    **Supported constraints:** immutable features.
+
+    Examples
+    --------
+    >>> from celia import Data, TorchModel, CounterGANClassifierExplainer
+    >>> explainer = CounterGANClassifierExplainer(
+    ...     model=torch_model, data=data, desired_class=1,
+    ... )
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(self, model: BaseModel, data: BaseData, *args: object, **kwargs: object) -> None:
-        if not isinstance(data, PublicData):
-            message = "CounterGANClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):
+            message = "CounterGANClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="CounterGANClassifierExplainer.__init__",
             )
 
@@ -186,7 +206,7 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
                 source="CounterGANClassifierExplainer._validate_sample",
             )
 
-    def _validate_desired_class(self, data: PublicData, **kwargs: object) -> None:
+    def _validate_desired_class(self, data: Data, **kwargs: object) -> None:
         """Validate that 'desired_class' is provided and valid."""
         if "desired_class" not in kwargs:
             message = "CounterGANClassifierExplainer requires 'desired_class' to be specified as a keyword argument during initialization."
@@ -201,7 +221,7 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
         desired_class = kwargs["desired_class"]
         if desired_class not in unique_classes:
             message = (
-                f"'desired_class' must be present in PublicData targets. "
+                f"'desired_class' must be present in Data targets. "
                 f"Expected values {unique_classes}. "
                 f"Received: {desired_class}."
             )

@@ -5,7 +5,7 @@ import pytest
 from celia.errors import ConfigurationError
 from celia.explainers import ClassifierExplainer
 from celia.explainers.cchvae import CCHVAEClassifierExplainer
-from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_public_data
+from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_data
 
 
 class TestCCHVAEClassifier(ClassifierExplainerTests):
@@ -22,22 +22,22 @@ class TestCCHVAEClassifier(ClassifierExplainerTests):
     def test_target_class_missing_raises_error(self, dummy_classification_dataframe):
         """ConfigurationError(param='target_class') when target_class is omitted."""
         model = self._get_model(dummy_classification_dataframe, None)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            CCHVAEClassifierExplainer(model=model, data=public_data)
+            CCHVAEClassifierExplainer(model=model, data=data)
 
         assert exc_info.value.param == "target_class"
 
     def test_feature_types_unknown_column_raises_error(self, dummy_classification_dataframe):
         """ConfigurationError(param='feature_types') when override contains unknown columns."""
         model = self._get_model(dummy_classification_dataframe, None)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             CCHVAEClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 target_class=1,
                 feature_types={"nonexistent_column": "real"},
             )
@@ -47,12 +47,12 @@ class TestCCHVAEClassifier(ClassifierExplainerTests):
     def test_feature_types_invalid_type_raises_error(self, dummy_classification_dataframe):
         """ConfigurationError(param='feature_types') when override contains invalid type values."""
         model = self._get_model(dummy_classification_dataframe, None)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             CCHVAEClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 target_class=1,
                 feature_types={"feature1": "invalid_type"},
             )
@@ -62,11 +62,11 @@ class TestCCHVAEClassifier(ClassifierExplainerTests):
     def test_feature_types_valid_override_accepted(self, dummy_classification_dataframe):
         """Explainer initializes successfully when feature_types override is valid."""
         model = self._get_model(dummy_classification_dataframe, None)
-        public_data, _ = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, _ = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = CCHVAEClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             target_class=1,
             feature_types={"feature1": "real", "feature2": "real", "feature3": "real"},
             epochs=10,
@@ -77,11 +77,11 @@ class TestCCHVAEClassifier(ClassifierExplainerTests):
     def test_cchvae_kwargs_stored(self, dummy_classification_dataframe):
         """C-CHVAE-specific kwargs are stored on the explainer instance."""
         model = self._get_model(dummy_classification_dataframe, None)
-        public_data, _ = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, _ = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = CCHVAEClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             target_class=1,
             latent_dim=4,
             intermediate_dim=10,

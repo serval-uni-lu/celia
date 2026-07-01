@@ -6,9 +6,10 @@ readme = "README.md"
 authors = [
     { name = "Alan Paredes", email = "alan.paredes@uni.lu" }
 ]
+license = "MIT"
+keywords = ["counterfactual explanations", "machine learning", "deep learning"]
 requires-python = ">=3.12"
 dependencies = [
-    "certifai",
     "clear-cf",
     "dice-ml",
     "bugdoc",
@@ -42,7 +43,6 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-certifai = { git = "https://github.com/alanpar97/CERTIFAI.git" }
 dice-ml = { git = "https://github.com/alanpar97/DiCE.git", rev = "main" }
 countergan = { git = "https://github.com/alanpar97/countergan.git" }
 clear-cf = { git = "https://github.com/alanpar97/clear.git" }
@@ -50,10 +50,24 @@ cchvae = { git = "https://github.com/alanpar97/c-chvae.git" }
 bugdoc = { git = "https://github.com/VIDA-NYU/BugDoc.git", subdirectory = "bugdoc_api", rev = "standalone"}
 fastar = { git = "https://github.com/alanpar97/FastAR.git" }
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "torch: marks tests that require PyTorch",
+]
+filterwarnings = [
+    "ignore::statsmodels.tools.sm_exceptions.PerfectSeparationWarning",
+    "ignore:overflow encountered in exp:RuntimeWarning:statsmodels",
+    "ignore:divide by zero encountered in log:RuntimeWarning:statsmodels",
+    "ignore:X does not have valid feature names:UserWarning:sklearn",
+]
+
 [dependency-groups]
 dev = [
     "category-encoders>=2.7.0",
     "furo>=2025.9.25",
+    "prek>=0.4.5",
     "pytest>=8.3.5",
     "ruff>=0.14.0",
     "sphinx>=8.2.3",

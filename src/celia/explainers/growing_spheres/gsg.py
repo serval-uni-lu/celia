@@ -7,8 +7,8 @@ import pandas as pd
 from numpy import linalg
 
 
-class GSG:
-    """Growing Spheres Generation.
+class GrowingSpheres:
+    """Growing Spheres.
 
     Generates CFs by iteratively expanding a hyperspherical
     shell around an input instance until a candidate that flips the

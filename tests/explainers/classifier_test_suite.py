@@ -31,7 +31,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
 from celia.model import BaseModel, SklearnModel
@@ -79,20 +79,20 @@ def _skip_unless(flag_name: str):
 # ---------------------------------------------------------------------------
 
 
-def _make_public_data(
+def _make_data(
     df: pd.DataFrame,
     *,
     immutable: list[str] | None = None,
     feasible_values: dict[str, Any] | None = None,
-) -> tuple[PublicData, pd.DataFrame]:
-    """Build ``PublicData`` from a classification DataFrame."""
+) -> tuple[Data, pd.DataFrame]:
+    """Build ``Data`` from a classification DataFrame."""
     X = df.drop(columns=["target"])
     y = df["target"]
 
     if feasible_values is None:
         feasible_values = _build_feasible_values(df)
 
-    public_data = PublicData(
+    data = Data(
         data=X,
         targets=y,
         target_name="target",
@@ -102,7 +102,7 @@ def _make_public_data(
         immutable_column_names=immutable if immutable is not None else [],
         feasible_values=feasible_values,
     )
-    return public_data, X
+    return data, X
 
 
 def _make_sklearn_model(df: pd.DataFrame) -> SklearnModel:
@@ -210,20 +210,20 @@ class ClassifierExplainerTests:
     def test_valid_initialization(self, dummy_classification_dataframe, request):
         """Explainer instantiates correctly with valid model and data."""
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
         assert isinstance(explainer, ClassifierExplainer)
-        assert isinstance(explainer.data, PublicData)
+        assert isinstance(explainer.data, Data)
         assert isinstance(explainer.model, BaseModel)
 
     def test_invalid_data_raises_configuration_error(self, dummy_classification_dataframe, request):
-        """Non-PublicData object must raise ``ConfigurationError`` with ``param='data'``."""
+        """Non-Data object must raise ``ConfigurationError`` with ``param='data'``."""
         model = self._get_model(dummy_classification_dataframe, request)
 
         class InvalidData:
@@ -241,17 +241,17 @@ class ClassifierExplainerTests:
     def test_counterfactuals_exclude_target_column(self, dummy_classification_dataframe, request):
         """Output columns must be feature-only — no target column."""
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
         sample = X.iloc[[0]]
-        target_name = public_data.target_name
-        feature_columns = set(public_data.column_names)
+        target_name = data.target_name
+        feature_columns = set(data.column_names)
 
         results = explainer.generate_counterfactuals(sample, **self.generate_kwargs)
 
@@ -281,11 +281,11 @@ class ClassifierExplainerTests:
         if dummy_model is None:
             pytest.skip("No dummy model available for torch-only methods")
 
-        public_data, X = _make_public_data(dummy_classification_dataframe)
+        data, X = _make_data(dummy_classification_dataframe)
 
         explainer = self.explainer_class(
             model=dummy_model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -296,11 +296,11 @@ class ClassifierExplainerTests:
     def test_single_instance_returns_single_counterfactual(self, dummy_classification_dataframe, request):
         """A single-row input must return a ``Counterfactual``, not a list."""
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -312,11 +312,11 @@ class ClassifierExplainerTests:
     def test_multiple_instances_returns_list(self, dummy_classification_dataframe, request):
         """Multiple rows must return a ``list[Counterfactual]``."""
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -339,14 +339,14 @@ class ClassifierExplainerTests:
         """Immutable columns in the counterfactual must equal the original values."""
         immutable_cols = ["feature1"]
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(
+        data, X = _make_data(
             dummy_classification_dataframe,
             immutable=immutable_cols,
         )
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -374,7 +374,7 @@ class ClassifierExplainerTests:
         """Continuous CF values must stay within the declared ``feasible_values`` bounds."""
         feasible = _build_feasible_values(dummy_classification_dataframe)
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(
+        data, X = _make_data(
             dummy_classification_dataframe,
             immutable=[],
             feasible_values=feasible,
@@ -382,7 +382,7 @@ class ClassifierExplainerTests:
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -411,7 +411,7 @@ class ClassifierExplainerTests:
         df = dummy_classification_dataframe_with_categories
         feasible = _build_feasible_values(df)
         model = self._get_model(df, request)
-        public_data, X = _make_public_data(
+        data, X = _make_data(
             df,
             immutable=[],
             feasible_values=feasible,
@@ -419,7 +419,7 @@ class ClassifierExplainerTests:
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -429,7 +429,7 @@ class ClassifierExplainerTests:
         if isinstance(results, Counterfactual):
             results = [results]
 
-        cat_cols = public_data.categorical_column_names or []
+        cat_cols = data.categorical_column_names or []
         for cf in results:
             for col in cat_cols:
                 allowed = feasible.get(col, [])
@@ -448,11 +448,11 @@ class ClassifierExplainerTests:
         """Must raise ``ConfigurationError`` when data contains unencoded categorical columns."""
         df = dummy_classification_dataframe_with_categories
         model = self._get_model(df, request)
-        public_data, X = _make_public_data(df, immutable=[])
+        data, X = _make_data(df, immutable=[])
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -468,11 +468,11 @@ class ClassifierExplainerTests:
     def test_sklearn_model_compatibility(self, dummy_classification_dataframe):
         """Generation succeeds with a ``SklearnModel``."""
         model = _make_sklearn_model(dummy_classification_dataframe)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = self.explainer_class(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -499,11 +499,11 @@ class ClassifierExplainerTests:
         found.
         """
         df = dummy_classification_dataframe
-        public_data, X = _make_public_data(df, immutable=[])
+        data, X = _make_data(df, immutable=[])
 
         explainer = self.explainer_class(
             model=torch_classification_model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -524,12 +524,12 @@ class ClassifierExplainerTests:
     def test_rejects_unsupported_sklearn_model(self, dummy_classification_dataframe):
         """``ConfigurationError`` when method actively rejects ``SklearnModel``."""
         model = _make_sklearn_model(dummy_classification_dataframe)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             self.explainer_class(
                 model=model,
-                data=public_data,
+                data=data,
                 **self.explainer_kwargs,
             )
 
@@ -538,12 +538,12 @@ class ClassifierExplainerTests:
     @_skip_unless("rejects_torch")
     def test_rejects_unsupported_torch_model(self, dummy_classification_dataframe, torch_classification_model):
         """``ConfigurationError`` when method actively rejects ``TorchModel``."""
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             self.explainer_class(
                 model=torch_classification_model,
-                data=public_data,
+                data=data,
                 **self.explainer_kwargs,
             )
 

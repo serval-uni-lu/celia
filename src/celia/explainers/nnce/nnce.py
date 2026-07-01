@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.metrics import pairwise_distances
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import ConfigurationError, MethodValueError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer, RegressorExplainer
 from celia.model import BaseModel
@@ -303,7 +303,7 @@ class NNCERegressorExplainer(RegressorExplainer):
     """
     Concrete implementation of RegressorExplainer for Nearest Neighbor-based Counterfactual Explanations.
     This class wraps the NearestNeighborCE method to generate counterfactual explanations
-    for regression tasks using public training data. It enforces the use of PublicData
+    for regression tasks using public training data. It enforces the use of Data
     and validates that the input data meets the expected structure required by the explainer.
 
     Parameters
@@ -312,7 +312,7 @@ class NNCERegressorExplainer(RegressorExplainer):
         The predictive regression model to be explained. Must implement the BaseModel interface
         with a `predict` method.
 
-    data : PublicData
+    data : Data
         The public dataset object, containing the training data, target labels, and metadata
         such as feature types and feasible values.
 
@@ -326,32 +326,31 @@ class NNCERegressorExplainer(RegressorExplainer):
     Raises
     ------
     ConfigurationError
+        If ``data`` is not an instance of ``Data``.
 
-    Attributes
-    ----------
-    model : BaseModel
-        The regression model to be explained.
+    Note
+    ----
+    **Supported constraints:** immutable features.
 
-    data : PublicData
-        The dataset used to generate counterfactual explanations.
-
-    explainer : NearestNeighborCE
-        Instance of the NearestNeighborCE class initialized with training data, model,
-        and target variable for regression tasks.
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, NNCERegressorExplainer
+    >>> explainer = NNCERegressorExplainer(model=sklearn_model, data=data)
+    >>> cfs = explainer.generate_counterfactuals(sample, target_range=(50000, 80000))
     """
 
-    def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
-        if not isinstance(data, PublicData):
+    def __init__(self, model: BaseModel, data: Data, *args, **kwargs):
+        if not isinstance(data, Data):
             raise ConfigurationError(
-                message="`data` must be an instance of PublicData.",
+                message="`data` must be an instance of Data.",
                 config={"received_type": type(data).__name__},
                 param="data",
-                hint="Instantiate and pass celia.data.PublicData(...).",
+                hint="Instantiate and pass celia.data.Data(...).",
                 source="NNCERegressorExplainer.__init__",
             )
         super().__init__(model, data, *args, **kwargs)
 
-    def _create_explainer(self, model: BaseModel, data: PublicData, *args, **kwargs) -> NearestNeighborCE:
+    def _create_explainer(self, model: BaseModel, data: Data, *args, **kwargs) -> NearestNeighborCE:
         target_name = data.target_name
         train_data = data.data
         verbose = kwargs.pop("verbose", False)
@@ -444,7 +443,7 @@ class NNCEClassifierExplainer(ClassifierExplainer):
         The predictive classification model to be explained. Must implement the BaseModel interface
         with a ``predict`` method.
 
-    data : PublicData
+    data : Data
         The public dataset object, containing the training data, target labels, and metadata
         such as feature types and feasible values.
 
@@ -459,35 +458,38 @@ class NNCEClassifierExplainer(ClassifierExplainer):
     Raises
     ------
     ConfigurationError
-        If the provided data is not an instance of PublicData.
+        If the provided data is not an instance of Data.
 
     Attributes
     ----------
     model : BaseModel
         The classification model to be explained.
 
-    data : PublicData
+    data : Data
         The dataset used to generate counterfactual explanations.
 
     explainer : NearestNeighborCE
         Instance of the NearestNeighborCE class initialized with training data, model,
         and target variable for classification tasks.
+
+    Note
+    ----
+    **Supported constraints:** immutable features.
+
     """
 
-    def __init__(self, model: BaseModel, data: PublicData, *args: object, **kwargs: object) -> None:
-        if not isinstance(data, PublicData):
+    def __init__(self, model: BaseModel, data: Data, *args: object, **kwargs: object) -> None:
+        if not isinstance(data, Data):
             raise ConfigurationError(
-                message="`data` must be an instance of PublicData.",
+                message="`data` must be an instance of Data.",
                 config={"received_type": type(data).__name__},
                 param="data",
-                hint="Instantiate and pass celia.data.PublicData(...).",
+                hint="Instantiate and pass celia.data.Data(...).",
                 source="NNCEClassifierExplainer.__init__",
             )
         super().__init__(model, data, *args, **kwargs)
 
-    def _create_explainer(
-        self, model: BaseModel, data: PublicData, *args: object, **kwargs: object
-    ) -> NearestNeighborCE:
+    def _create_explainer(self, model: BaseModel, data: Data, *args: object, **kwargs: object) -> NearestNeighborCE:
         target_name = data.target_name
         train_data = data.data
         verbose = bool(kwargs.pop("verbose", False))

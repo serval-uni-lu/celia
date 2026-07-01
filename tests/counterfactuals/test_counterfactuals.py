@@ -474,6 +474,16 @@ class TestValidateCounterfactualsErrors:
         err = exc_info.value
         assert err.param == "columns"
 
+    def test_duplicate_columns_different_count_raises(self):
+        """Same column set but different column count (duplicates) raises MethodError."""
+        original = pd.DataFrame([[1, 2, 3]], columns=["a", "a", "b"])
+        counterfactual = pd.DataFrame([[4, 5]], columns=["a", "b"])
+        with pytest.raises(MethodError) as exc_info:
+            Counterfactual._validate_counterfactuals(original, counterfactual)
+        err = exc_info.value
+        assert err.param == "columns"
+        assert "same number of columns" in err.message
+
 
 # ── Happy path: properties and highlighted_counterfactuals ───────────────────
 

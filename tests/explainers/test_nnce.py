@@ -3,7 +3,7 @@ import warnings
 import pytest
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import NNCEClassifierExplainer, NNCERegressorExplainer
 from celia.model import SklearnModel
@@ -20,7 +20,7 @@ class TestNNCERegressorExplainer:
         data = dummy_regression_dataframe
         X = data.drop(columns=['target'])
         y = data['target']
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name='target',
@@ -33,16 +33,16 @@ class TestNNCERegressorExplainer:
 
         explainer = NNCERegressorExplainer(
             model=model_trained_without_encoded_data,
-            data=public_data,
+            data=data,
         )
 
         assert isinstance(explainer, NNCERegressorExplainer)
-        assert isinstance(explainer.data, PublicData)
+        assert isinstance(explainer.data, Data)
         assert isinstance(explainer.model, SklearnModel)
         assert explainer.data.data.equals(X)
 
-    def test_nnce_creation_without_public_data(self, model_trained_with_encoded_data):
-        """Test that NNCERegressorExplainer raises ConfigurationError when data is not PublicData"""
+    def test_nnce_creation_without_data(self, model_trained_with_encoded_data):
+        """Test that NNCERegressorExplainer raises ConfigurationError when data is not Data"""
         class InvalidData:
             pass
 
@@ -51,16 +51,16 @@ class TestNNCERegressorExplainer:
             NNCERegressorExplainer(model=model_trained_with_encoded_data,
                                        data=invalid_data)
             err = exc_info.value
-            assert "NNCERegressorExplainer requires data to be an instance of PublicData." in err.message
+            assert "NNCERegressorExplainer requires data to be an instance of Data." in err.message
             assert err.param == "data"
 
     def test_nnce_run_without_target_range(self,  model_trained_without_encoded_data,
-                                                  celia_public_data_without_encoded_data,
+                                                  celia_data_without_encoded_data,
                                                dummy_test_regression_dataframe_encoded):
         """Test that NNCERegressorExplainer raises ConfigurationError when target_range is not provided"""
 
         explainer = NNCERegressorExplainer(model=model_trained_without_encoded_data,
-                                               data=celia_public_data_without_encoded_data)
+                                               data=celia_data_without_encoded_data)
 
         sample = dummy_test_regression_dataframe_encoded
         sample = sample.drop(columns=['target'])
@@ -80,7 +80,7 @@ class TestNNCERegressorExplainer:
         tree.fit(X, y)
         model = SklearnModel(tree)
 
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name="target",
@@ -91,7 +91,7 @@ class TestNNCERegressorExplainer:
             feasible_values={},
         )
 
-        explainer = NNCERegressorExplainer(model=model, data=public_data)
+        explainer = NNCERegressorExplainer(model=model, data=data)
 
         sample = X.iloc[:3]
         current_preds = tree.predict(sample)
@@ -108,11 +108,11 @@ class TestNNCERegressorExplainer:
             assert isinstance(cf, Counterfactual)
 
     def test_nnce_no_counterfactuals_found(self, model_trained_without_encoded_data,
-                                              celia_public_data_without_encoded_data,
+                                              celia_data_without_encoded_data,
                                               dummy_regression_dataframe):
         """Test that NNCERegressorExplainer raises NoCounterfactualsFoundError when no CFs found."""
         explainer = NNCERegressorExplainer(model=model_trained_without_encoded_data,
-                                           data=celia_public_data_without_encoded_data,
+                                           data=celia_data_without_encoded_data,
                                            )
 
         sample = dummy_regression_dataframe.iloc[[0]]
@@ -123,11 +123,11 @@ class TestNNCERegressorExplainer:
             explainer.generate_counterfactuals(sample, target_range=target_range)
 
     def test_nnce_no_counterfactuals_found_emits_warning(self, model_trained_without_encoded_data,
-                                                          celia_public_data_without_encoded_data,
+                                                          celia_data_without_encoded_data,
                                                           dummy_regression_dataframe):
         """Test that a warning is emitted when no counterfactual is found for an instance."""
         explainer = NNCERegressorExplainer(model=model_trained_without_encoded_data,
-                                           data=celia_public_data_without_encoded_data,
+                                           data=celia_data_without_encoded_data,
                                            )
 
         sample = dummy_regression_dataframe.iloc[[0]]
@@ -151,7 +151,7 @@ class TestNNCERegressorExplainer:
         tree.fit(X, y)
         model = SklearnModel(tree)
 
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name="target",
@@ -162,7 +162,7 @@ class TestNNCERegressorExplainer:
             feasible_values={},
         )
 
-        explainer = NNCERegressorExplainer(model=model, data=public_data)
+        explainer = NNCERegressorExplainer(model=model, data=data)
 
         sample = X.iloc[[0]]
         current_pred = tree.predict(sample)[0]
@@ -170,8 +170,8 @@ class TestNNCERegressorExplainer:
         target_range = [current_pred + 0.05, current_pred + 0.5]
 
         results = explainer.generate_counterfactuals(sample, target_range=target_range)
-        target_name = public_data.target_name
-        feature_columns = set(public_data.column_names)
+        target_name = data.target_name
+        feature_columns = set(data.column_names)
 
         if isinstance(results, Counterfactual):
             results = [results]
@@ -202,7 +202,7 @@ class TestNNCERegressorExplainer:
         tree.fit(X, y)
         model = SklearnModel(tree)
 
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name="target",
@@ -213,7 +213,7 @@ class TestNNCERegressorExplainer:
             feasible_values={},
         )
 
-        explainer = NNCERegressorExplainer(model=model, data=public_data)
+        explainer = NNCERegressorExplainer(model=model, data=data)
 
         sample = X.iloc[[0]]
         current_pred = tree.predict(sample)[0]
@@ -234,7 +234,7 @@ class TestNNCEClassifierExplainer:
         data = dummy_classification_dataframe
         X = data.drop(columns=['target'])
         y = data['target']
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name='target',
@@ -247,16 +247,16 @@ class TestNNCEClassifierExplainer:
 
         explainer = NNCEClassifierExplainer(
             model=model_trained_classifier_stratified,
-            data=public_data,
+            data=data,
         )
 
         assert isinstance(explainer, NNCEClassifierExplainer)
-        assert isinstance(explainer.data, PublicData)
+        assert isinstance(explainer.data, Data)
         assert isinstance(explainer.model, SklearnModel)
         assert explainer.data.data.equals(X)
 
-    def test_nnce_classifier_creation_without_public_data(self, model_trained_classifier):
-        """Test that NNCEClassifierExplainer raises ConfigurationError when data is not PublicData."""
+    def test_nnce_classifier_creation_without_data(self, model_trained_classifier):
+        """Test that NNCEClassifierExplainer raises ConfigurationError when data is not Data."""
         class InvalidData:
             pass
 
@@ -265,7 +265,7 @@ class TestNNCEClassifierExplainer:
             NNCEClassifierExplainer(model=model_trained_classifier, data=invalid_data)
 
         err = exc_info.value
-        assert "`data` must be an instance of PublicData." in err.message
+        assert "`data` must be an instance of Data." in err.message
         assert err.param == "data"
 
     def test_nnce_classifier_run_with_multiple_instances(
@@ -282,7 +282,7 @@ class TestNNCEClassifierExplainer:
         tree.fit(X, y)
         model = SklearnModel(tree)
 
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name='target',
@@ -293,7 +293,7 @@ class TestNNCEClassifierExplainer:
             feasible_values={},
         )
 
-        explainer = NNCEClassifierExplainer(model=model, data=public_data)
+        explainer = NNCEClassifierExplainer(model=model, data=data)
 
         sample = X.iloc[:3]
         results = explainer.generate_counterfactuals(sample)
@@ -308,7 +308,7 @@ class TestNNCEClassifierExplainer:
     def test_nnce_classifier_no_counterfactuals_found(
             self,
             model_trained_classifier,
-            celia_public_data_classification,
+            celia_data_classification,
             dummy_classification_dataframe,
     ):
         """Test that NNCEClassifierExplainer raises NoCounterfactualsFoundError when no CFs are found.
@@ -318,7 +318,7 @@ class TestNNCEClassifierExplainer:
         """
         explainer = NNCEClassifierExplainer(
             model=model_trained_classifier,
-            data=celia_public_data_classification,
+            data=celia_data_classification,
         )
 
         sample = dummy_classification_dataframe.drop(columns=['target']).iloc[[0]]
@@ -328,13 +328,13 @@ class TestNNCEClassifierExplainer:
     def test_nnce_classifier_no_counterfactuals_found_emits_warning(
             self,
             model_trained_classifier,
-            celia_public_data_classification,
+            celia_data_classification,
             dummy_classification_dataframe,
     ):
         """Test that a warning is emitted when no counterfactual is found for an instance."""
         explainer = NNCEClassifierExplainer(
             model=model_trained_classifier,
-            data=celia_public_data_classification,
+            data=celia_data_classification,
         )
 
         sample = dummy_classification_dataframe.drop(columns=['target']).iloc[[0]]
@@ -356,7 +356,7 @@ class TestNNCEClassifierExplainer:
         model = SklearnModel(tree)
 
         # No immutable features so NNCE can find neighbours with a different class
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name="target",
@@ -367,11 +367,11 @@ class TestNNCEClassifierExplainer:
             feasible_values={},
         )
 
-        explainer = NNCEClassifierExplainer(model=model, data=public_data)
+        explainer = NNCEClassifierExplainer(model=model, data=data)
 
         sample = X.iloc[[0]]
-        target_name = public_data.target_name
-        feature_columns = set(public_data.column_names)
+        target_name = data.target_name
+        feature_columns = set(data.column_names)
 
         results = explainer.generate_counterfactuals(sample)
 
@@ -404,7 +404,7 @@ class TestNNCEClassifierExplainer:
         tree.fit(X, y)
         model = SklearnModel(tree)
 
-        public_data = PublicData(
+        data = Data(
             data=X,
             targets=y,
             target_name="target",
@@ -415,7 +415,7 @@ class TestNNCEClassifierExplainer:
             feasible_values={},
         )
 
-        explainer = NNCEClassifierExplainer(model=model, data=public_data)
+        explainer = NNCEClassifierExplainer(model=model, data=data)
 
         sample = X.iloc[[0]]
         result = explainer.generate_counterfactuals(sample)

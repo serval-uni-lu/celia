@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from celia.data.public_data import PublicData
+from celia.data.public_data import Data
 from celia.errors import ConfigurationError
 
 @pytest.fixture
@@ -25,9 +25,9 @@ def valid_feasible_values() -> dict:
     }
 
 @pytest.fixture
-def valid_public_data(dummy_dataframe, valid_feasible_values) -> PublicData:
-    """A valid PublicData object ready for testing."""
-    return PublicData(
+def valid_data(dummy_dataframe, valid_feasible_values) -> Data:
+    """A valid Data object ready for testing."""
+    return Data(
         data=dummy_dataframe,
         targets=pd.Series([0, 1, 0, 1, 0], name="target"),
         target_name="target",
@@ -38,23 +38,23 @@ def valid_public_data(dummy_dataframe, valid_feasible_values) -> PublicData:
         feasible_values=valid_feasible_values
     )
 
-def create_public_data_with_overrides(
+def create_data_with_overrides(
     dummy_dataframe,
     valid_feasible_values,
     **overrides
-) -> PublicData:
+) -> Data:
     """
-    Create a PublicData object with optional overrides.
+    Create a Data object with optional overrides.
     Useful for constructing invalid configurations.
 
     Example:
-        create_public_data_with_overrides(
+        create_data_with_overrides(
             dummy_dataframe,
             valid_feasible_values,
             continuous_column_names=["age", "target"]
         )
     """
-    return PublicData(
+    return Data(
         data=overrides.get("data", dummy_dataframe),
         targets=overrides.get("targets", pd.Series([0, 1, 0, 1, 0], name="target")),
         target_name=overrides.get("target_name", "target"),
@@ -67,12 +67,12 @@ def create_public_data_with_overrides(
         correlated_features=overrides.get("correlated_features", None),
     )
 
-class TestPublicData:
+class TestData:
 
     def test_invalid_data_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if `data` is not a DataFrame."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(dummy_dataframe,
+            create_data_with_overrides(dummy_dataframe,
                                               valid_feasible_values,
                                               data=[1, 2, 3])
 
@@ -83,7 +83,7 @@ class TestPublicData:
     def test_invalid_targets_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if `targets` is not a Series."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(dummy_dataframe,
+            create_data_with_overrides(dummy_dataframe,
                                               valid_feasible_values,
                                               targets= [0, 1, 0])
 
@@ -94,7 +94,7 @@ class TestPublicData:
     def test_invalid_target_name_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if `target_name` is not a string."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(dummy_dataframe,
+            create_data_with_overrides(dummy_dataframe,
                                               valid_feasible_values,
                                               target_name=123)
 
@@ -105,7 +105,7 @@ class TestPublicData:
     def test_invalid_continuous_column_names_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if `continuous_column_names` is not a list or None."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(dummy_dataframe,
+            create_data_with_overrides(dummy_dataframe,
                                               valid_feasible_values,
                                               continuous_column_names="age")
 
@@ -116,7 +116,7 @@ class TestPublicData:
     def test_invalid_categorical_column_names_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if `categorical_column_names` is not a list or None."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(dummy_dataframe,
+            create_data_with_overrides(dummy_dataframe,
                                               valid_feasible_values,
                                               categorical_column_names="gender")
 
@@ -127,7 +127,7 @@ class TestPublicData:
     def test_invalid_immutable_column_names_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if `immutable_column_names` is not a list or None."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(dummy_dataframe,
+            create_data_with_overrides(dummy_dataframe,
                                               valid_feasible_values,
                                               immutable_column_names="age")
 
@@ -138,7 +138,7 @@ class TestPublicData:
     def test_invalid_feasible_values_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if `feasible_values` is not a dict or None."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(dummy_dataframe,
+            create_data_with_overrides(dummy_dataframe,
                                               valid_feasible_values,
                                               feasible_values=["invalid", "list"])
 
@@ -152,7 +152,7 @@ class TestPublicData:
         shorter_targets = pd.Series([0, 1, 0], name="target")  # only 3 instead of 5
 
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(dummy_dataframe,
+            create_data_with_overrides(dummy_dataframe,
                                               valid_feasible_values,
                                               targets=shorter_targets)
 
@@ -165,7 +165,7 @@ class TestPublicData:
     def test_data_label_alignment_passes(self, dummy_dataframe, valid_feasible_values):
         """Ensure validation passes when data and targets lengths match."""
         try:
-            PublicData(
+            Data(
                 data=dummy_dataframe,
                 targets=pd.Series([0, 1, 0, 1, 0], name="target"),
                 target_name="target",
@@ -181,7 +181,7 @@ class TestPublicData:
     def test_missing_continuous_feature_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if a continuous feature is not present in data."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe,
                 valid_feasible_values,
                 continuous_column_names=["age", "nonexistent_feature"]
@@ -195,7 +195,7 @@ class TestPublicData:
     def test_missing_categorical_feature_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if a categorical feature is not present in data."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe,
                 valid_feasible_values,
                 categorical_column_names=["gender", "missing_col"]
@@ -209,7 +209,7 @@ class TestPublicData:
     def test_missing_immutable_feature_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if an immutable feature is not present in data."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe,
                 valid_feasible_values,
                 immutable_column_names=["nonexistent_feature"]
@@ -223,14 +223,14 @@ class TestPublicData:
     def test_all_features_present_passes(self, dummy_dataframe, valid_feasible_values):
         """Ensure validate_data passes when all features exist in the dataset."""
         try:
-            create_public_data_with_overrides(dummy_dataframe, valid_feasible_values)
+            create_data_with_overrides(dummy_dataframe, valid_feasible_values)
         except Exception as e:
             pytest.fail(f"Unexpected exception raised for valid feature names: {e}")
 
     def test_feature_overlap_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if a feature appears in both continuous and categorical lists."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe,
                 valid_feasible_values,
                 continuous_column_names=["age", "income"],
@@ -245,7 +245,7 @@ class TestPublicData:
     def test_no_feature_overlap_passes(self, dummy_dataframe, valid_feasible_values):
         """Ensure validate_data passes when no overlap exists between continuous and categorical lists."""
         try:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe,
                 valid_feasible_values,
                 continuous_column_names=["age", "income"],
@@ -256,7 +256,7 @@ class TestPublicData:
 
     def test_target_name_series_alignment(self, dummy_dataframe, valid_feasible_values):
         series = pd.Series([0, 1, 0, 1, 0], name="frailty")
-        data = create_public_data_with_overrides(
+        data = create_data_with_overrides(
             dummy_dataframe, valid_feasible_values, targets=series, target_name="health_index"
         )
         assert data.targets.name == "health_index"
@@ -264,7 +264,7 @@ class TestPublicData:
 
     def test_target_name_ndarray_converted(self, dummy_dataframe, valid_feasible_values):
         arr = np.array([0, 1, 0, 1, 0])
-        data = create_public_data_with_overrides(
+        data = create_data_with_overrides(
             dummy_dataframe, valid_feasible_values, targets=arr, target_name="frailty"
         )
         assert isinstance(data.targets, pd.Series)
@@ -273,7 +273,7 @@ class TestPublicData:
     def test_target_name_ndarray_missing_name_raises(self, dummy_dataframe, valid_feasible_values):
         arr = np.array([0, 1, 0, 1, 0])
         with pytest.raises(ConfigurationError):
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values, targets=arr, target_name=None
             )
 
@@ -312,7 +312,7 @@ class TestPublicData:
     ):
         """Parametrized: check that invalid feasible_values raise the correct ConfigurationError."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe,
                 bad_feasible_values,
             )
@@ -339,7 +339,7 @@ class TestPublicData:
     def test_missing_parameters_behavior(
             self, dummy_dataframe, valid_feasible_values, missing_param, should_raise_typeerror
     ):
-        """Parametrized: check how PublicData behaves when one argument is omitted."""
+        """Parametrized: check how Data behaves when one argument is omitted."""
         kwargs = {
             "data": dummy_dataframe,
             "targets": pd.Series([0, 1, 0, 1, 0], name="target"),
@@ -357,10 +357,10 @@ class TestPublicData:
 
         if should_raise_typeerror:
             with pytest.raises(TypeError):
-                PublicData(**kwargs)
+                Data(**kwargs)
         else:
             try:
-                PublicData(**kwargs)
+                Data(**kwargs)
             except Exception as e:
                 pytest.fail(f"Unexpected exception for missing optional param '{missing_param}': {e}")
 
@@ -369,7 +369,7 @@ class TestPublicData:
     def test_invalid_monotonic_increasing_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if monotonic_increasing_column_names is not a list or None."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 monotonic_increasing_column_names="age"
             )
@@ -381,7 +381,7 @@ class TestPublicData:
     def test_missing_monotonic_increasing_feature_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if a monotonic_increasing feature is not in data."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 monotonic_increasing_column_names=["nonexistent_feature"]
             )
@@ -394,7 +394,7 @@ class TestPublicData:
     def test_monotonic_immutable_overlap_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if a feature is both monotonic_increasing and immutable."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 immutable_column_names=["age"],
                 monotonic_increasing_column_names=["age"]
@@ -408,7 +408,7 @@ class TestPublicData:
     def test_monotonic_must_be_continuous_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if a monotonic feature is not in continuous_column_names."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 continuous_column_names=["income"],
                 immutable_column_names=[],
@@ -422,7 +422,7 @@ class TestPublicData:
 
     def test_valid_monotonic_increasing_passes(self, dummy_dataframe, valid_feasible_values):
         """Ensure valid monotonic_increasing_column_names is accepted."""
-        data = create_public_data_with_overrides(
+        data = create_data_with_overrides(
             dummy_dataframe, valid_feasible_values,
             immutable_column_names=[],
             monotonic_increasing_column_names=["age"]
@@ -431,7 +431,7 @@ class TestPublicData:
 
     def test_monotonic_increasing_none_passes(self, dummy_dataframe, valid_feasible_values):
         """Ensure None is accepted for monotonic_increasing_column_names."""
-        data = create_public_data_with_overrides(
+        data = create_data_with_overrides(
             dummy_dataframe, valid_feasible_values,
             monotonic_increasing_column_names=None
         )
@@ -442,7 +442,7 @@ class TestPublicData:
     def test_invalid_correlated_features_type(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if correlated_features is not a list or None."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 correlated_features="invalid"
             )
@@ -454,7 +454,7 @@ class TestPublicData:
     def test_correlated_invalid_tuple_length_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if a correlated entry is not a 3-tuple."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 correlated_features=[("age", "income")]
             )
@@ -466,7 +466,7 @@ class TestPublicData:
     def test_correlated_non_numeric_delta_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if delta is not numeric."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 correlated_features=[("age", "income", "not_a_number")]
             )
@@ -478,7 +478,7 @@ class TestPublicData:
     def test_correlated_same_cause_effect_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if cause and effect are the same column."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 correlated_features=[("age", "age", 0.05)]
             )
@@ -490,7 +490,7 @@ class TestPublicData:
     def test_correlated_unknown_cause_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if cause column does not exist in data."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 correlated_features=[("nonexistent", "income", 0.05)]
             )
@@ -503,7 +503,7 @@ class TestPublicData:
     def test_correlated_unknown_effect_raises(self, dummy_dataframe, valid_feasible_values):
         """Raise ConfigurationError if effect column does not exist in data."""
         with pytest.raises(ConfigurationError) as exc_info:
-            create_public_data_with_overrides(
+            create_data_with_overrides(
                 dummy_dataframe, valid_feasible_values,
                 correlated_features=[("age", "nonexistent", 0.05)]
             )
@@ -516,7 +516,7 @@ class TestPublicData:
     def test_valid_correlated_features_passes(self, dummy_dataframe, valid_feasible_values):
         """Ensure valid correlated_features is accepted."""
         correlated = [("age", "income", 0.05)]
-        data = create_public_data_with_overrides(
+        data = create_data_with_overrides(
             dummy_dataframe, valid_feasible_values,
             correlated_features=correlated
         )
@@ -524,7 +524,7 @@ class TestPublicData:
 
     def test_correlated_features_none_passes(self, dummy_dataframe, valid_feasible_values):
         """Ensure None is accepted for correlated_features."""
-        data = create_public_data_with_overrides(
+        data = create_data_with_overrides(
             dummy_dataframe, valid_feasible_values,
             correlated_features=None
         )
@@ -533,8 +533,33 @@ class TestPublicData:
     def test_correlated_multiple_effects_per_cause(self, dummy_dataframe, valid_feasible_values):
         """Ensure a cause can have multiple effects."""
         correlated = [("age", "income", 0.05), ("age", "gender", 0.1)]
-        data = create_public_data_with_overrides(
+        data = create_data_with_overrides(
             dummy_dataframe, valid_feasible_values,
             correlated_features=correlated
         )
         assert len(data.correlated_features) == 2
+
+    def test_correlated_non_string_cause_effect_raises(self, dummy_dataframe, valid_feasible_values):
+        """Raise ConfigurationError when cause or effect in correlated_features is not a string."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            create_data_with_overrides(
+                dummy_dataframe, valid_feasible_values,
+                correlated_features=[(123, "income", 0.05)]
+            )
+
+        err = exc_info.value
+        assert err.param == "correlated_features"
+        assert "must be strings" in err.message
+
+    def test_series_with_no_name_defaults_to_target(self, dummy_dataframe, valid_feasible_values):
+        """When targets is a Series with name=None and target_name is omitted, default to 'target'."""
+        series = pd.Series([0, 1, 0, 1, 0])
+        assert series.name is None
+
+        data = create_data_with_overrides(
+            dummy_dataframe, valid_feasible_values,
+            targets=series,
+            target_name=None,
+        )
+        assert data.target_name == "target"
+        assert data.targets.name == "target"

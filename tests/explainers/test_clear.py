@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import pandas as pd
 import pytest
 from sklearn.linear_model import RidgeClassifier
 from sklearn.tree import DecisionTreeClassifier
 
+from celia.data import Data
 from celia.errors import ConfigurationError
 from celia.explainers.clear import CLEARClassifierExplainer
 from celia.model import SklearnModel
-from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_public_data
+from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_data
 
 
 def _fit_tree_model(df) -> SklearnModel:
@@ -38,11 +40,11 @@ class TestCLEARClassifier(ClassifierExplainerTests):
         instead — exercising ``_validate_sample``.
         """
         model = _fit_tree_model(dummy_classification_dataframe)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = CLEARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             **self.explainer_kwargs,
         )
 
@@ -60,12 +62,12 @@ class TestCLEARClassifier(ClassifierExplainerTests):
         """ConfigurationError(param='data') when data contains non-numeric columns at init."""
         model = _fit_tree_model(dummy_classification_dataframe)
 
-        public_data, _ = _make_public_data(
+        data, _ = _make_data(
             dummy_classification_dataframe_with_categories, immutable=[]
         )
 
         with pytest.raises(ConfigurationError) as exc_info:
-            CLEARClassifierExplainer(model=model, data=public_data, **self.explainer_kwargs)
+            CLEARClassifierExplainer(model=model, data=data, **self.explainer_kwargs)
 
         assert exc_info.value.param == "data"
 
@@ -76,22 +78,22 @@ class TestCLEARClassifier(ClassifierExplainerTests):
             dummy_classification_dataframe["target"],
         )
         model = SklearnModel(ridge)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
-            CLEARClassifierExplainer(model=model, data=public_data, **self.explainer_kwargs)
+            CLEARClassifierExplainer(model=model, data=data, **self.explainer_kwargs)
 
         assert exc_info.value.param == "model"
 
     def test_invalid_num_classes_raises_error(self, dummy_classification_dataframe):
         """ConfigurationError(param='num_classes') when num_classes < 2."""
         model = _fit_tree_model(dummy_classification_dataframe)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             CLEARClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 num_classes=1,
             )
 
@@ -100,12 +102,12 @@ class TestCLEARClassifier(ClassifierExplainerTests):
     def test_multiclass_without_class_labels_raises_error(self, dummy_classification_dataframe):
         """ConfigurationError(param='class_labels') when num_classes > 2 and class_labels missing."""
         model = _fit_tree_model(dummy_classification_dataframe)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             CLEARClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 num_classes=3,
             )
 
@@ -114,11 +116,11 @@ class TestCLEARClassifier(ClassifierExplainerTests):
     def test_clear_kwargs_forwarded(self, dummy_classification_dataframe):
         """CLEAR-specific kwargs are stored on the explainer instance."""
         model = _fit_tree_model(dummy_classification_dataframe)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         explainer = CLEARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             num_classes=2,
             number_of_synthetic_samples=123,
             random_seed=7,
@@ -131,3 +133,53 @@ class TestCLEARClassifier(ClassifierExplainerTests):
         assert explainer._verbose is True
         assert explainer._multi_class_focus == "All"
         assert explainer._num_classes == 2
+
+
+class TestCLEARInferOhePrefixes:
+    """Tests for CLEARClassifierExplainer._infer_ohe_prefixes."""
+
+    @staticmethod
+    def _data_with_categoricals(cat_cols: list[str]) -> Data:
+        n = 3
+        all_cols = cat_cols if cat_cols else ["_dummy"]
+        df = pd.DataFrame({col: [0.0] * n for col in all_cols})
+        return Data(
+            data=df,
+            targets=pd.Series([0, 1, 0], name="target"),
+            target_name="target",
+            column_names=df.columns.tolist(),
+            continuous_column_names=[c for c in df.columns if c not in cat_cols],
+            categorical_column_names=cat_cols,
+            immutable_column_names=[],
+            feasible_values=None,
+        )
+
+    def test_no_categorical_columns(self):
+        data = self._data_with_categoricals([])
+        assert CLEARClassifierExplainer._infer_ohe_prefixes(data) == []
+
+    def test_multi_column_ohe_group(self):
+        data = self._data_with_categoricals(["color_red", "color_blue", "color_green"])
+        prefixes = CLEARClassifierExplainer._infer_ohe_prefixes(data)
+        assert prefixes == ["color"]
+
+    def test_single_column_group_with_underscore(self):
+        data = self._data_with_categoricals(["size_large"])
+        prefixes = CLEARClassifierExplainer._infer_ohe_prefixes(data)
+        assert prefixes == ["size"]
+
+    def test_single_column_group_without_underscore(self):
+        data = self._data_with_categoricals(["standalone"])
+        prefixes = CLEARClassifierExplainer._infer_ohe_prefixes(data)
+        assert prefixes == ["standalone"]
+
+    def test_mixed_groups(self):
+        data = self._data_with_categoricals([
+            "color_red", "color_blue",
+            "shape_circle", "shape_square", "shape_triangle",
+            "solo",
+        ])
+        prefixes = CLEARClassifierExplainer._infer_ohe_prefixes(data)
+        assert "color" in prefixes
+        assert "shape" in prefixes
+        assert "solo" in prefixes

@@ -6,7 +6,7 @@ import pandas as pd
 from clear_cf import CLEAR
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
 from celia.model import SklearnModel
@@ -37,7 +37,7 @@ class CLEARClassifierExplainer(ClassifierExplainer):
     model : BaseModel
         A CELIA model wrapper (``SklearnModel`` or ``TorchModel``).
         The underlying model must support ``predict_proba``.
-    data : PublicData
+    data : Data
         Training data with metadata. All features must be numeric.
     num_classes : int, default=2
         Number of classes in the classification problem.
@@ -61,20 +61,39 @@ class CLEARClassifierExplainer(ClassifierExplainer):
     config : RegressionConfig or None, default=None
         Optional regression configuration for the CLEAR algorithm.
 
+    Raises
+    ------
+    ConfigurationError
+        If ``data`` is not a ``Data`` instance, if the data contains
+        non-numeric columns, if the model lacks ``predict_proba``, or if
+        ``num_classes > 2`` without ``class_labels``.
+
     References
     ----------
     White, A., & d'Avila Garcez, A. (2020).
     Measurable Counterfactual Local Explanations via Regression.
     In *ECAI 2020* (pp. 1529-1536). IOS Press.
+
+    Note
+    ----
+    **Supported constraints:** none.
+    Immutable features, feasible value ranges, monotonic, and correlated
+    feature constraints are not supported by CLEAR.
+
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, CLEARClassifierExplainer
+    >>> explainer = CLEARClassifierExplainer(model=sklearn_model, data=data)
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(self, model: BaseModel, data: BaseData, *args: object, **kwargs: object) -> None:
-        if not isinstance(data, PublicData):
-            message = "CLEARClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):
+            message = "CLEARClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="CLEARClassifierExplainer.__init__",
             )
 
@@ -208,9 +227,8 @@ class CLEARClassifierExplainer(ClassifierExplainer):
         except AttributeError as exc:
             # clear_cf crashes with ``AttributeError: 'DataFrame' object has no
             # attribute 'observation'`` when its internal regression produces an
-            # empty boundary DataFrame (e.g., a constant-prediction model). Treat
-            # this as "no counterfactuals found" rather than leaking the upstream
-            # bug to the user.
+            # empty boundary DataFrame (e.g., a constant-prediction model). We treat
+            # this as "no counterfactuals found".
             if "observation" in str(exc):
                 message = "No counterfactuals found."
                 raise NoCounterfactualsFoundError(
@@ -236,7 +254,7 @@ class CLEARClassifierExplainer(ClassifierExplainer):
         return celia_results[0] if is_single else celia_results
 
     @staticmethod
-    def _infer_ohe_prefixes(data: PublicData) -> list[str]:
+    def _infer_ohe_prefixes(data: Data) -> list[str]:
         """Recover OHE group prefixes from expanded categorical column names.
 
         OHE columns follow the ``{prefix}_{value}`` convention.  Columns from
