@@ -65,5 +65,6 @@ jobs:
 
       - name: Verify wheel installs
         run: |
+          uv venv
           uv pip install dist/*.whl
           uv run python -c "import celia; print(celia.__version__)"
