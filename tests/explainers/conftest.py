@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import pandas as pd
 
-from celia.data import PublicData
+from celia.data import Data
 
 from tests.conftest import build_feasible_values
 
@@ -69,14 +69,14 @@ def torch_classification_model(dummy_classification_dataframe):
 
 
 @pytest.fixture
-def celia_public_data_classification_no_immutable(dummy_classification_dataframe) -> PublicData:
-    """Classification ``PublicData`` with **no** immutable features.
+def celia_data_classification_no_immutable(dummy_classification_dataframe) -> Data:
+    """Classification ``Data`` with **no** immutable features.
 
     Useful when a method needs full freedom to find counterfactuals.
     """
     data = dummy_classification_dataframe.drop(columns=["target"])
     targets = dummy_classification_dataframe["target"]
-    return PublicData(
+    return Data(
         data=data,
         targets=targets,
         target_name="target",

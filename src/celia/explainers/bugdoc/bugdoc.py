@@ -9,7 +9,7 @@ from bugdoc.algos.stacked_shortcut_standalone import StackedShortcutStandalone a
 from bugdoc.utils.quine_mccluskey import prune_tree
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import NoCounterfactualsFoundError
 from celia.explainers import RegressorExplainer
 from celia.explainers._base import ClassifierExplainer
@@ -20,7 +20,7 @@ class BugDocRegressorExplainer(RegressorExplainer):
     """
         Concrete implementation of RegressorExplainer for BugDoc method.
         This class wraps the BugDoc method to generate counterfactual explanations
-        for regression tasks using public training data. It enforces the use of PublicData
+        for regression tasks using public training data. It enforces the use of Data
         and validates that the input data meets the expected structure required by the explainer.
 
     Parameters
@@ -29,7 +29,7 @@ class BugDocRegressorExplainer(RegressorExplainer):
         The predictive regression model to be explained. Must implement the BaseModel interface
         with a `predict` method.
 
-    data : PublicData
+    data : Data
         The public dataset object, containing the training data, target labels, and metadata
         such as feature types and feasible values.
 
@@ -41,25 +41,31 @@ class BugDocRegressorExplainer(RegressorExplainer):
     Raises
     ------
     ValueError
-        If the provided data is not an instance of PublicData.
+        If the provided data is not an instance of Data.
 
     Attributes
     ----------
     model : BaseModel
         The regression model to be explained.
 
-    data : PublicData
+    data : Data
         The dataset used to generate counterfactual explanations.
+
+    Note
+    ----
+    **Supported constraints:** immutable features.
+    Feasible value ranges, monotonic, and correlated feature constraints
+    are not supported.
     """
 
-    def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
-        # Assert that data is an instance of PublicData
-        if not isinstance(data, PublicData):
-            message = "data must be an instance of PublicData"
+    def __init__(self, model: BaseModel, data: Data, *args, **kwargs):
+        # Assert that data is an instance of Data
+        if not isinstance(data, Data):
+            message = "data must be an instance of Data"
             raise ValueError(message)
         super().__init__(model, data, *args, **kwargs)
 
-    def _create_explainer(self, model: BaseModel, data: PublicData, *args, **kwargs) -> RegressorExplainer:
+    def _create_explainer(self, model: BaseModel, data: Data, *args, **kwargs) -> RegressorExplainer:
         self.budget = kwargs.pop("budget", 100)
         return self
 
@@ -173,7 +179,7 @@ class BugDocClassifierExplainer(ClassifierExplainer):
     Concrete implementation of ClassifierExplainer for BugDoc.
 
     This class wraps the BugDoc method to generate counterfactual explanations
-    for classification tasks using public training data. It enforces the use of PublicData
+    for classification tasks using public training data. It enforces the use of Data
     and validates that the input data meets the expected structure required by the explainer.
 
     Parameters
@@ -182,7 +188,7 @@ class BugDocClassifierExplainer(ClassifierExplainer):
         The predictive classification model to be explained. Must implement the BaseModel interface
         with a ``predict`` method.
 
-    data : PublicData
+    data : Data
         The public dataset object, containing the training data, target labels, and metadata
         such as feature types and feasible values.
 
@@ -195,25 +201,29 @@ class BugDocClassifierExplainer(ClassifierExplainer):
     Raises
     ------
     ConfigurationError
-        If the provided data is not an instance of PublicData.
+        If the provided data is not an instance of Data.
 
     Attributes
     ----------
     model : BaseModel
         The classification model to be explained.
 
-    data : PublicData
+    data : Data
         The dataset used to generate counterfactual explanations.
+
+    Note
+    ----
+    **Supported constraints:** immutable features.
     """
 
-    def __init__(self, model: BaseModel, data: PublicData, *args, **kwargs):
-        # Assert that data is an instance of PublicData
-        if not isinstance(data, PublicData):
-            message = "data must be an instance of PublicData"
+    def __init__(self, model: BaseModel, data: Data, *args, **kwargs):
+        # Assert that data is an instance of Data
+        if not isinstance(data, Data):
+            message = "data must be an instance of Data"
             raise ValueError(message)
         super().__init__(model, data, *args, **kwargs)
 
-    def _create_explainer(self, model: BaseModel, data: PublicData, *args, **kwargs) -> ClassifierExplainer:
+    def _create_explainer(self, model: BaseModel, data: Data, *args, **kwargs) -> ClassifierExplainer:
         self.budget = kwargs.pop("budget", 100)
         return self
 

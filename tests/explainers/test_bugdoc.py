@@ -44,34 +44,34 @@ class DummyDebuggingDecisionTreesWithTree(DummyDebuggingDecisionTrees):
 
 
 @pytest.fixture
-def regression_sample(celia_public_data_without_encoded_data) -> pd.DataFrame:
-    return celia_public_data_without_encoded_data.data.iloc[[0]]
+def regression_sample(celia_data_without_encoded_data) -> pd.DataFrame:
+    return celia_data_without_encoded_data.data.iloc[[0]]
 
 
 @pytest.fixture
-def classification_sample(celia_public_data_classification) -> pd.DataFrame:
-    return celia_public_data_classification.data.iloc[[0]]
+def classification_sample(celia_data_classification) -> pd.DataFrame:
+    return celia_data_classification.data.iloc[[0]]
 
 
 class TestBugDocExplainer:
-    def test_regressor_explainer_requires_public_data(self, model_trained_without_encoded_data):
-        with pytest.raises(ValueError, match="data must be an instance of PublicData"):
+    def test_regressor_explainer_requires_data(self, model_trained_without_encoded_data):
+        with pytest.raises(ValueError, match="data must be an instance of Data"):
             BugDocRegressorExplainer(model=model_trained_without_encoded_data, data=object())
 
-    def test_classifier_explainer_requires_public_data(self, model_trained_classifier):
-        with pytest.raises(ValueError, match="data must be an instance of PublicData"):
+    def test_classifier_explainer_requires_data(self, model_trained_classifier):
+        with pytest.raises(ValueError, match="data must be an instance of Data"):
             BugDocClassifierExplainer(model=model_trained_classifier, data=object())
 
     def test_regressor_generate_counterfactuals_uses_stackedshortcut(
         self,
         monkeypatch,
         model_trained_without_encoded_data,
-        celia_public_data_without_encoded_data,
+        celia_data_without_encoded_data,
         regression_sample,
     ):
         explainer = BugDocRegressorExplainer(
             model=model_trained_without_encoded_data,
-            data=celia_public_data_without_encoded_data,
+            data=celia_data_without_encoded_data,
         )
 
         monkeypatch.setattr(
@@ -90,12 +90,12 @@ class TestBugDocExplainer:
         self,
         monkeypatch,
         model_trained_without_encoded_data,
-        celia_public_data_without_encoded_data,
+        celia_data_without_encoded_data,
         regression_sample,
     ):
         explainer = BugDocRegressorExplainer(
             model=model_trained_without_encoded_data,
-            data=celia_public_data_without_encoded_data,
+            data=celia_data_without_encoded_data,
         )
 
         monkeypatch.setattr(
@@ -115,12 +115,12 @@ class TestBugDocExplainer:
         self,
         monkeypatch,
         model_trained_without_encoded_data,
-        celia_public_data_without_encoded_data,
+        celia_data_without_encoded_data,
         regression_sample,
     ):
         explainer = BugDocRegressorExplainer(
             model=model_trained_without_encoded_data,
-            data=celia_public_data_without_encoded_data,
+            data=celia_data_without_encoded_data,
         )
 
         monkeypatch.setattr(
@@ -153,12 +153,12 @@ class TestBugDocExplainer:
         self,
         monkeypatch,
         model_trained_without_encoded_data,
-        celia_public_data_without_encoded_data,
+        celia_data_without_encoded_data,
         regression_sample,
     ):
         explainer = BugDocRegressorExplainer(
             model=model_trained_without_encoded_data,
-            data=celia_public_data_without_encoded_data,
+            data=celia_data_without_encoded_data,
         )
 
         monkeypatch.setattr(
@@ -184,12 +184,12 @@ class TestBugDocExplainer:
         self,
         monkeypatch,
         model_trained_classifier,
-        celia_public_data_classification,
+        celia_data_classification,
         classification_sample,
     ):
         explainer = BugDocClassifierExplainer(
             model=model_trained_classifier,
-            data=celia_public_data_classification,
+            data=celia_data_classification,
         )
 
         monkeypatch.setattr(
@@ -208,12 +208,12 @@ class TestBugDocExplainer:
         self,
         monkeypatch,
         model_trained_classifier,
-        celia_public_data_classification,
+        celia_data_classification,
         classification_sample,
     ):
         explainer = BugDocClassifierExplainer(
             model=model_trained_classifier,
-            data=celia_public_data_classification,
+            data=celia_data_classification,
         )
 
         monkeypatch.setattr(
@@ -247,12 +247,12 @@ class TestBugDocExplainer:
         self,
         monkeypatch,
         model_trained_classifier,
-        celia_public_data_classification,
+        celia_data_classification,
         classification_sample,
     ):
         explainer = BugDocClassifierExplainer(
             model=model_trained_classifier,
-            data=celia_public_data_classification,
+            data=celia_data_classification,
         )
 
         monkeypatch.setattr(

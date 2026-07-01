@@ -6,10 +6,10 @@ from typing import Any
 import pytest
 
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers.fastar import FastARClassifierExplainer
-from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_public_data, _make_sklearn_model
+from tests.explainers.classifier_test_suite import ClassifierExplainerTests, _make_data, _make_sklearn_model
 
 
 class TestFastARClassifier(ClassifierExplainerTests):
@@ -32,9 +32,9 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
     def test_counterfactuals_exclude_target_column(self, dummy_classification_dataframe, request):
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
-        explainer = self.explainer_class(model=model, data=public_data, **self.explainer_kwargs)
+        explainer = self.explainer_class(model=model, data=data, **self.explainer_kwargs)
         sample = X.iloc[[0]]
 
         try:
@@ -45,18 +45,18 @@ class TestFastARClassifier(ClassifierExplainerTests):
         if isinstance(results, Counterfactual):
             results = [results]
 
-        feature_columns = set(public_data.column_names)
+        feature_columns = set(data.column_names)
         for cf in results:
-            assert public_data.target_name not in cf.original_instance.columns
-            assert public_data.target_name not in cf.counterfactuals.columns
+            assert data.target_name not in cf.original_instance.columns
+            assert data.target_name not in cf.counterfactuals.columns
             assert set(cf.original_instance.columns) == feature_columns
             assert set(cf.counterfactuals.columns) == feature_columns
 
     def test_single_instance_returns_single_counterfactual(self, dummy_classification_dataframe, request):
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
-        explainer = self.explainer_class(model=model, data=public_data, **self.explainer_kwargs)
+        explainer = self.explainer_class(model=model, data=data, **self.explainer_kwargs)
         sample = X.iloc[[0]]
 
         try:
@@ -68,9 +68,9 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
     def test_multiple_instances_returns_list(self, dummy_classification_dataframe, request):
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
-        explainer = self.explainer_class(model=model, data=public_data, **self.explainer_kwargs)
+        explainer = self.explainer_class(model=model, data=data, **self.explainer_kwargs)
         sample = X.iloc[:3]
 
         try:
@@ -89,12 +89,12 @@ class TestFastARClassifier(ClassifierExplainerTests):
         """All features immutable → agent cannot act → no CFs found."""
         model = self._get_model(dummy_classification_dataframe, request)
         all_features = dummy_classification_dataframe.drop(columns=["target"]).columns.tolist()
-        public_data, X = _make_public_data(
+        data, X = _make_data(
             dummy_classification_dataframe,
             immutable=all_features,
         )
 
-        explainer = self.explainer_class(model=model, data=public_data, **self.explainer_kwargs)
+        explainer = self.explainer_class(model=model, data=data, **self.explainer_kwargs)
         sample = X.iloc[[0]]
 
         with pytest.raises(NoCounterfactualsFoundError):
@@ -104,12 +104,12 @@ class TestFastARClassifier(ClassifierExplainerTests):
         """Override: tolerate NoCounterfactualsFoundError with untrained agent."""
         immutable_cols = ["feature1"]
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(
+        data, X = _make_data(
             dummy_classification_dataframe,
             immutable=immutable_cols,
         )
 
-        explainer = self.explainer_class(model=model, data=public_data, **self.explainer_kwargs)
+        explainer = self.explainer_class(model=model, data=data, **self.explainer_kwargs)
         sample = X.iloc[[0]]
 
         try:
@@ -133,9 +133,9 @@ class TestFastARClassifier(ClassifierExplainerTests):
     def test_sklearn_model_compatibility(self, dummy_classification_dataframe):
         """Override: tolerate NoCounterfactualsFoundError with untrained agent."""
         model = _make_sklearn_model(dummy_classification_dataframe)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
-        explainer = self.explainer_class(model=model, data=public_data, **self.explainer_kwargs)
+        explainer = self.explainer_class(model=model, data=data, **self.explainer_kwargs)
         sample = X.iloc[[0]]
 
         try:
@@ -157,11 +157,11 @@ class TestFastARClassifier(ClassifierExplainerTests):
         model = self._get_model(
             request.getfixturevalue("dummy_classification_dataframe"), request
         )
-        public_data, X = _make_public_data(
+        data, X = _make_data(
             request.getfixturevalue("dummy_classification_dataframe"), immutable=[]
         )
 
-        explainer = self.explainer_class(model=model, data=public_data, **self.explainer_kwargs)
+        explainer = self.explainer_class(model=model, data=data, **self.explainer_kwargs)
 
         sample = X.iloc[[0]].copy()
         sample["feature1"] = "A"
@@ -175,12 +175,12 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
     def test_invalid_target_class_type(self, dummy_classification_dataframe, request):
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             FastARClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 target_class="not_an_int",
                 total_timesteps=100,
             )
@@ -189,12 +189,12 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
     def test_invalid_total_timesteps(self, dummy_classification_dataframe, request):
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             FastARClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 total_timesteps=0,
             )
 
@@ -202,12 +202,12 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
     def test_invalid_policy_path(self, dummy_classification_dataframe, request):
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, _ = _make_public_data(dummy_classification_dataframe)
+        data, _ = _make_data(dummy_classification_dataframe)
 
         with pytest.raises(ConfigurationError) as exc_info:
             FastARClassifierExplainer(
                 model=model,
-                data=public_data,
+                data=data,
                 policy_path="/nonexistent/path/policy.zip",
                 total_timesteps=100,
             )
@@ -216,11 +216,11 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
     def test_save_policy(self, dummy_classification_dataframe, request, tmp_path):
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, _ = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, _ = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = FastARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             total_timesteps=100,
         )
 
@@ -231,11 +231,11 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
     def test_load_policy_from_path(self, dummy_classification_dataframe, request, tmp_path):
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = FastARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             total_timesteps=100,
         )
 
@@ -244,7 +244,7 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
         loaded_explainer = FastARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             policy_path=f"{policy_file}.zip",
             total_timesteps=100,
         )
@@ -258,11 +258,11 @@ class TestFastARClassifier(ClassifierExplainerTests):
     def test_non_numeric_data_raises_at_generate(self, dummy_classification_dataframe, request):
         """Non-numeric sample must raise ConfigurationError at generate time."""
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, X = _make_public_data(dummy_classification_dataframe, immutable=[])
+        data, X = _make_data(dummy_classification_dataframe, immutable=[])
 
         explainer = FastARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             total_timesteps=100,
         )
 
@@ -274,18 +274,18 @@ class TestFastARClassifier(ClassifierExplainerTests):
 
         assert exc_info.value.param == "sample"
 
-    def test_feature_spec_built_from_public_data(self, dummy_classification_dataframe, request):
-        """Verify the internal FeatureSpec matches PublicData attributes."""
+    def test_feature_spec_built_from_data(self, dummy_classification_dataframe, request):
+        """Verify the internal FeatureSpec matches Data attributes."""
         model = self._get_model(dummy_classification_dataframe, request)
-        public_data, _ = _make_public_data(dummy_classification_dataframe, immutable=["feature1"])
+        data, _ = _make_data(dummy_classification_dataframe, immutable=["feature1"])
 
         explainer = FastARClassifierExplainer(
             model=model,
-            data=public_data,
+            data=data,
             total_timesteps=100,
         )
 
         spec = explainer.explainer.feature_spec
-        assert list(spec.columns) == public_data.column_names
-        assert list(spec.immutable) == (public_data.immutable_column_names or [])
-        assert list(spec.continuous) == (public_data.continuous_column_names or [])
+        assert list(spec.columns) == data.column_names
+        assert list(spec.immutable) == (data.immutable_column_names or [])
+        assert list(spec.continuous) == (data.continuous_column_names or [])

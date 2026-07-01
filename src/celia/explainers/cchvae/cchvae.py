@@ -8,9 +8,9 @@ from cchvae import Counterfactual as CCHVAECounterfactual
 from cchvae.errors import CCHVAEError, CCHVAEValueError
 from cchvae.types import VALID_FEATURE_TYPES, FeatureType
 
-from celia._utils.dependecies import requires_torch_class
+from celia._utils.dependencies import requires_torch_class
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
@@ -19,18 +19,67 @@ from celia.model import BaseModel
 
 @requires_torch_class
 class CCHVAEClassifierExplainer(ClassifierExplainer):
-    """
-    C-CHVAE: Counterfactual Conditional Heterogeneous Variational Autoencoder.
+    """C-CHVAE: Counterfactual Conditional Heterogeneous Variational Autoencoder.
 
-    Learning Model-Agnostic Counterfactual Explanations for Tabular Data.
-    Martin Pawelczyk, Klaus Broelemann, Gjergji Kasneci. WWW '20.
+    Trains a conditional heterogeneous VAE on the background dataset and
+    searches latent-space hyperspheres to produce counterfactuals that flip
+    the classifier's prediction to a user-specified ``target_class``.
 
-    This explainer trains a conditional heterogeneous VAE on the background
-    dataset and searches latent-space hyperspheres to produce counterfactuals
-    that flip the classifier's prediction to a user-specified ``target_class``.
+    Because C-CHVAE is an amortized, class-conditioned method,
+    ``target_class`` must be fixed at construction time.
 
-    Because C-CHVAE is an amortized, class-conditioned method, ``target_class``
-    must be fixed at construction time.
+    Parameters
+    ----------
+    model : BaseModel
+        A CELIA model wrapper (``SklearnModel`` or ``TorchModel``).
+    data : Data
+        Training data with metadata (feature names, types, constraints).
+    target_class : int or str
+        The desired class for counterfactuals. Required.
+    feature_types : dict[str, str] or None, default=None
+        Per-column type override (``"real"``, ``"count"``, ``"cat"``).
+        When ``None``, types are inferred from ``Data`` metadata.
+    latent_dim : int, default=2
+        Dimensionality of the VAE latent space.
+    intermediate_dim : int, default=5
+        Width of VAE hidden layers.
+    categorical_latent_dim : int, default=3
+        Latent dimension for categorical features.
+    learning_rate : float, default=1e-3
+        Optimiser learning rate.
+    epochs : int, default=80
+        Number of VAE training epochs.
+    batch_size : int, default=100
+        Training batch size.
+    device : str, default="cpu"
+        PyTorch device (``"cpu"`` or ``"cuda"``).
+    random_state : int or None, default=619
+        Random seed for reproducibility.
+    verbose : bool, default=False
+        If ``True``, print progress during training.
+
+    Raises
+    ------
+    ConfigurationError
+        If ``data`` is not a ``Data`` instance, ``target_class`` is missing,
+        or the upstream C-CHVAE library rejects the configuration.
+
+    References
+    ----------
+    Pawelczyk, M., Broelemann, K., & Kasneci, G. (2020). Learning
+    Model-Agnostic Counterfactual Explanations for Tabular Data. WWW '20.
+
+    Note
+    ----
+    **Supported constraints:** immutable features.
+
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, CCHVAEClassifierExplainer
+    >>> explainer = CCHVAEClassifierExplainer(
+    ...     model=sklearn_model, data=data, target_class=1,
+    ... )
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(
@@ -40,12 +89,12 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
         *args: object,
         **kwargs: object,
     ) -> None:
-        if not isinstance(data, PublicData):
-            message = "CCHVAEClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):
+            message = "CCHVAEClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="CCHVAEClassifierExplainer.__init__",
             )
 
@@ -85,12 +134,12 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
         **kwargs: object,
     ) -> CCHVAE:
         """Train the underlying C-CHVAE model on the background data."""
-        if not isinstance(data, PublicData):  # defensive — already checked in __init__
-            message = "CCHVAEClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):  # defensive — already checked in __init__
+            message = "CCHVAEClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="CCHVAEClassifierExplainer._create_explainer",
             )
 
@@ -131,19 +180,19 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
     @staticmethod
     def _resolve_feature_types(
         override: dict[str, FeatureType] | None,
-        data: PublicData,
+        data: Data,
     ) -> dict[str, FeatureType] | None:
         """
-        Merge an explicit ``feature_types`` override with types inferred from ``PublicData``.
+        Merge an explicit ``feature_types`` override with types inferred from ``Data``.
 
         The returned dict is intentionally partial: any column that cannot be
-        classified from the override or from ``PublicData``'s
+        classified from the override or from ``Data``'s
         ``continuous_column_names`` / ``categorical_column_names`` is **omitted**
         so that C-CHVAE's own ``infer_schema`` handles it at construction time.
 
         Rules
         -----
-        1. If ``override`` is ``None`` and ``PublicData`` has no
+        1. If ``override`` is ``None`` and ``Data`` has no
            continuous/categorical classification, return ``None`` so C-CHVAE
            infers every column.
         2. Validate ``override``:
@@ -153,7 +202,7 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
                else ``ConfigurationError(param="feature_types")``.
         3. For every column in ``data.column_names`` not already supplied by
            the override:
-             - categorical (per PublicData)         -> ``"cat"``
+             - categorical (per Data)         -> ``"cat"``
              - continuous with integer dtype        -> ``"count"``
              - continuous with any other dtype      -> ``"real"``
              - unclassified                         -> left out (C-CHVAE infers)
@@ -163,7 +212,7 @@ class CCHVAEClassifierExplainer(ClassifierExplainer):
             if unknown:
                 message = (
                     f"`feature_types` contains column names that are not present in "
-                    f"PublicData.column_names: {sorted(unknown)}"
+                    f"Data.column_names: {sorted(unknown)}"
                 )
                 raise ConfigurationError(
                     message=message,

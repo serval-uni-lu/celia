@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, Any, cast
 import numpy as np
 import pandas as pd
 
-from celia._utils.dependecies import requires_torch_class
+from celia._utils.dependencies import requires_torch_class
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError
 from celia.explainers import ClassifierExplainer
@@ -327,9 +327,46 @@ class GRACE:
 
 
 class GRACEClassifierExplainer(ClassifierExplainer):
-    """
-    GRACE: Generating Concise and Informative Contrastive Sample to Explain Neural Network Model’s Prediction.
-    Thai Le, Suhang Wang, Dongwon Lee. 26th ACM SIGKDD Int’l Conf. on Knowledge Discovery and Data Mining (KDD), Virtual. August 2020.
+    """GRACE classifier explainer.
+
+    Generates concise contrastive samples for neural-network classifiers by
+    iteratively perturbing the most salient features (via gradient-based
+    ranking) within user-specified feasible bounds.
+
+    GRACE requires a ``TorchModel`` backend — scikit-learn models are not
+    supported.  All features must be numeric; categorical features must be
+    one-hot encoded before use.
+
+    Parameters
+    ----------
+    model : TorchModel
+        A CELIA ``TorchModel`` wrapper around a ``torch.nn.Module``.
+    data : Data
+        Training data with metadata (feature names, types, constraints).
+
+    Raises
+    ------
+    ConfigurationError
+        If ``model`` is not a ``TorchModel`` or ``data`` is not a ``Data``
+        instance.
+
+    References
+    ----------
+    Thai Le, Suhang Wang, Dongwon Lee. "Generating Concise and Informative
+    Contrastive Sample to Explain Neural Network Model’s Prediction."
+    26th ACM SIGKDD Int’l Conf. on Knowledge Discovery and Data Mining
+    (KDD), 2020.
+
+    Note
+    ----
+    **Supported constraints:** feasible value ranges.
+
+    Examples
+    --------
+    >>> from celia import Data, TorchModel, GRACEClassifierExplainer
+    >>> wrapped = TorchModel(net)
+    >>> explainer = GRACEClassifierExplainer(model=wrapped, data=data)
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     def __init__(self, model: BaseModel, data: BaseData, *args: object, **kwargs: object) -> None:
@@ -342,11 +379,11 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                 source="GRACEClassifierExplainer.__init__",
             )
 
-        if not isinstance(data, PublicData):
+        if not isinstance(data, Data):
             raise ConfigurationError(
-                message="GRACEClassifierExplainer requires data to be an instance of PublicData.",
+                message="GRACEClassifierExplainer requires data to be an instance of Data.",
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="GRACEClassifierExplainer.__init__",
             )
 
@@ -467,7 +504,7 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                     raise ConfigurationError(
                         message=message,
                         param=feature,
-                        source="PublicData",
+                        source="Data",
                     ) from e
 
         return feature_min_bounds, feature_max_bounds

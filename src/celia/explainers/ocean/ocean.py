@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import pandas as pd
 
-from celia._utils.dependecies import requires_ocean_class
+from celia._utils.dependencies import requires_ocean_class
 from celia.counterfactuals import Counterfactual
-from celia.data import PublicData
+from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
@@ -32,15 +32,31 @@ class OCEANClassifierExplainer(ClassifierExplainer):
     ----------
     model : SklearnModel
         A CELIA ``SklearnModel`` wrapping a fitted tree-ensemble classifier.
-    data : PublicData
+    data : Data
         Training data with metadata (feature names, types, constraints).
         All features must be numeric.
+
+    Raises
+    ------
+    ConfigurationError
+        If ``model`` is not a ``SklearnModel``, ``data`` is not a ``Data``
+        instance, or the data contains non-numeric columns.
 
     References
     ----------
     Parmentier, A., & Vidal, T. (2021). Optimal Counterfactual Explanations
     in Tree Ensembles. Proceedings of the 38th International Conference on
     Machine Learning (ICML).
+
+    Note
+    ----
+    **Supported constraints:** immutable features, feasible value ranges.
+
+    Examples
+    --------
+    >>> from celia import Data, SklearnModel, OCEANClassifierExplainer
+    >>> explainer = OCEANClassifierExplainer(model=sklearn_model, data=data)
+    >>> cf = explainer.generate_counterfactuals(sample)
     """
 
     _ocean_mapper: Mapper[Feature]
@@ -57,12 +73,12 @@ class OCEANClassifierExplainer(ClassifierExplainer):
                 source="OCEANClassifierExplainer.__init__",
             )
 
-        if not isinstance(data, PublicData):
-            message = "OCEANClassifierExplainer requires data to be an instance of PublicData."
+        if not isinstance(data, Data):
+            message = "OCEANClassifierExplainer requires data to be an instance of Data."
             raise ConfigurationError(
                 message=message,
                 param="data",
-                config={"expected": "PublicData", "received": type(data).__name__},
+                config={"expected": "Data", "received": type(data).__name__},
                 source="OCEANClassifierExplainer.__init__",
             )
 
@@ -93,10 +109,10 @@ class OCEANClassifierExplainer(ClassifierExplainer):
         from ocean.feature import parse_features
 
         raw_model = model.model
-        data_public: PublicData = data  # type: ignore[assignment]
+        data_cast: Data = data  # type: ignore[assignment]
 
         _, mapper = parse_features(
-            data_public.data,
+            data_cast.data,
             scale=False,
             drop_na=False,
             drop_constant=False,
@@ -106,9 +122,9 @@ class OCEANClassifierExplainer(ClassifierExplainer):
 
         # Precompute binary feature mappings for row transformation
         self._binary_kept_value = {}
-        for col in data_public.column_names:
-            if data_public.data[col].nunique() == 2:  # noqa: PLR2004
-                unique_sorted = sorted(data_public.data[col].unique())
+        for col in data_cast.column_names:
+            if data_cast.data[col].nunique() == 2:  # noqa: PLR2004
+                unique_sorted = sorted(data_cast.data[col].unique())
                 self._binary_kept_value[col] = unique_sorted[1]
 
         epsilon = kwargs.get("epsilon", 1.0 / (2.0**16))
@@ -281,11 +297,11 @@ class OCEANClassifierExplainer(ClassifierExplainer):
         """
         import gurobipy as gp
 
-        data_public: PublicData = self.data  # type: ignore[assignment]
+        data_cast: Data = self.data  # type: ignore[assignment]
         custom_constrs: list[gp.Constr] = []
 
         # Immutable feature constraints
-        immutable = data_public.immutable_column_names or []
+        immutable = data_cast.immutable_column_names or []
         for feature_name in immutable:
             idx = self._ocean_mapper.idx.get(feature_name)
             var = self.explainer.vget(idx)
@@ -293,7 +309,7 @@ class OCEANClassifierExplainer(ClassifierExplainer):
             custom_constrs.append(constr)
 
         # Feasible value constraints
-        feasible = data_public.feasible_values or {}
+        feasible = data_cast.feasible_values or {}
         for feature_name, bounds in feasible.items():
             if (
                 isinstance(bounds, (list, tuple))
@@ -385,18 +401,18 @@ class OCEANClassifierExplainer(ClassifierExplainer):
         pd.DataFrame
             Single-row DataFrame with CELIA's original column names and values.
         """
-        data_public: PublicData = self.data  # type: ignore[assignment]
+        data_cast: Data = self.data  # type: ignore[assignment]
         cf_values: dict[str, Any] = explanation.value
 
         result: dict[str, Any] = {}
-        for feature_name in data_public.column_names:
+        for feature_name in data_cast.column_names:
             feature = self._ocean_mapper[feature_name]
             val = cf_values[feature_name]
 
             if feature.is_binary and feature_name in self._binary_kept_value:
-                unique_sorted = sorted(data_public.data[feature_name].unique())
+                unique_sorted = sorted(data_cast.data[feature_name].unique())
                 result[feature_name] = unique_sorted[1] if np.isclose(float(val), 1.0) else unique_sorted[0]
             else:
                 result[feature_name] = float(val)
 
-        return pd.DataFrame([result], columns=data_public.column_names)
+        return pd.DataFrame([result], columns=data_cast.column_names)
