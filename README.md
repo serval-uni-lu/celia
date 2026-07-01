@@ -151,12 +151,6 @@ Full documentation (user guide, examples, and API reference) is available at the
 
 ---
 
-## Contributing
-
-Contributions are welcome! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines.
-
----
-
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
