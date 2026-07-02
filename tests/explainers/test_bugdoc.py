@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from celia.counterfactuals import Counterfactual
-from celia.errors import NoCounterfactualsFoundError
+from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers.bugdoc import BugDocClassifierExplainer, BugDocRegressorExplainer
 from celia.explainers.bugdoc import bugdoc as bugdoc_module
 
@@ -55,11 +55,11 @@ def classification_sample(celia_data_classification) -> pd.DataFrame:
 
 class TestBugDocExplainer:
     def test_regressor_explainer_requires_data(self, model_trained_without_encoded_data):
-        with pytest.raises(ValueError, match="data must be an instance of Data"):
+        with pytest.raises(ConfigurationError, match="data must be an instance of Data"):
             BugDocRegressorExplainer(model=model_trained_without_encoded_data, data=object())
 
     def test_classifier_explainer_requires_data(self, model_trained_classifier):
-        with pytest.raises(ValueError, match="data must be an instance of Data"):
+        with pytest.raises(ConfigurationError, match="data must be an instance of Data"):
             BugDocClassifierExplainer(model=model_trained_classifier, data=object())
 
     def test_regressor_generate_counterfactuals_uses_stackedshortcut(

@@ -10,7 +10,7 @@ from bugdoc.utils.quine_mccluskey import prune_tree
 
 from celia.counterfactuals import Counterfactual
 from celia.data import Data
-from celia.errors import NoCounterfactualsFoundError
+from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import RegressorExplainer
 from celia.explainers._base import ClassifierExplainer
 from celia.model import BaseModel
@@ -40,7 +40,7 @@ class BugDocRegressorExplainer(RegressorExplainer):
         Additional keyword arguments.
     Raises
     ------
-    ValueError
+    ConfigurationError
         If the provided data is not an instance of Data.
 
     Attributes
@@ -62,7 +62,12 @@ class BugDocRegressorExplainer(RegressorExplainer):
         # Assert that data is an instance of Data
         if not isinstance(data, Data):
             message = "data must be an instance of Data"
-            raise ValueError(message)
+            raise ConfigurationError(
+                message=message,
+                param="data",
+                config={"expected": "Data", "received": type(data).__name__},
+                source="BugDocRegressorExplainer.__init__",
+            )
         super().__init__(model, data, *args, **kwargs)
 
     def _create_explainer(self, model: BaseModel, data: Data, *args, **kwargs) -> RegressorExplainer:
@@ -99,8 +104,8 @@ class BugDocRegressorExplainer(RegressorExplainer):
             row_dict[self.data.target_name] = self.model.predict(row.to_frame().T)[0]
             original_instance = pd.DataFrame([row_dict])
             immutable_columns = self.data.immutable_column_names if self.data.immutable_column_names is not None else []
-            coliumn_names = list(self.data.column_names) if self.data.column_names is not None else []
-            input_dict = {col: [row[col]] if col in immutable_columns else sample_dict[col] for col in coliumn_names}
+            column_names = list(self.data.column_names) if self.data.column_names is not None else []
+            input_dict = {col: [row[col]] if col in immutable_columns else sample_dict[col] for col in column_names}
 
             # Create historical run for BugDoc using its combinatorial function and the model prediction for a batch of inputs
 
@@ -220,7 +225,12 @@ class BugDocClassifierExplainer(ClassifierExplainer):
         # Assert that data is an instance of Data
         if not isinstance(data, Data):
             message = "data must be an instance of Data"
-            raise ValueError(message)
+            raise ConfigurationError(
+                message=message,
+                param="data",
+                config={"expected": "Data", "received": type(data).__name__},
+                source="BugDocClassifierExplainer.__init__",
+            )
         super().__init__(model, data, *args, **kwargs)
 
     def _create_explainer(self, model: BaseModel, data: Data, *args, **kwargs) -> ClassifierExplainer:
@@ -250,8 +260,8 @@ class BugDocClassifierExplainer(ClassifierExplainer):
 
             original_instance = pd.DataFrame([row_dict])
             immutable_columns = self.data.immutable_column_names if self.data.immutable_column_names is not None else []
-            coliumn_names = list(self.data.column_names) if self.data.column_names is not None else []
-            input_dict = {col: [row[col]] if col in immutable_columns else sample_dict[col] for col in coliumn_names}
+            column_names = list(self.data.column_names) if self.data.column_names is not None else []
+            input_dict = {col: [row[col]] if col in immutable_columns else sample_dict[col] for col in column_names}
 
             # Create historical run for BugDoc using its combinatorial function and the model prediction for a batch of inputs
 

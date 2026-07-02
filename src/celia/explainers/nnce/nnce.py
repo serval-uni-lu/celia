@@ -1,3 +1,4 @@
+import logging
 import warnings
 
 import numpy as np
@@ -9,6 +10,8 @@ from celia.data import Data
 from celia.errors import ConfigurationError, MethodValueError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer, RegressorExplainer
 from celia.model import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class NearestNeighborCE:
@@ -106,7 +109,7 @@ class NearestNeighborCE:
         instance_df = pd.DataFrame([instance])
         current_pred = self.model.predict(instance_df)[0]
         if self.verbose:
-            print("current_pred", current_pred)
+            logger.debug("Current prediction: %s", current_pred)
 
         # Step 2: Identify candidates
         immutable_features = [col for col in self.train_data.columns if col not in mutable_features]
@@ -115,7 +118,7 @@ class NearestNeighborCE:
         mask = (self.train_data[immutable_features] == instance[immutable_features]).all(axis=1)
         candidates = self.train_data[mask].copy()
         if self.verbose:
-            print(f"Available Candidates in Mutable Features: {len(candidates)}")
+            logger.debug("Available candidates in mutable features: %d", len(candidates))
 
         if candidates.empty:
             warnings.warn("No candidates found with matching immutable features.", stacklevel=2)
@@ -130,7 +133,7 @@ class NearestNeighborCE:
         else:
             min_val, max_val = desired_output
             if self.verbose:
-                print(f"Desired output: {min_val} - {max_val}")
+                logger.debug("Desired output: %s - %s", min_val, max_val)
             valid_idx = np.where((candidate_preds >= min_val) & (candidate_preds <= max_val))[0]
 
         valid_candidates = candidates.iloc[valid_idx]
