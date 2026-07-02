@@ -58,7 +58,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.metadata]
 # The counterfactual method packages are distributed only as git repositories,
-# so dependencies must be declared as direct references (works with uv and pip).
+# so dependencies must be declared as direct references
 allow-direct-references = true
 
 [tool.pytest.ini_options]
@@ -77,13 +77,16 @@ filterwarnings = [
 [dependency-groups]
 dev = [
     "category-encoders>=2.7.0",
-    "furo>=2025.9.25",
     "prek>=0.4.5",
     "pytest>=8.3.5",
     "pytest-cov>=6.0.0",
     "ruff>=0.14.0",
-    "sphinx>=8.2.3",
     "torch>=2.8.0",
     "ty>=0.0.1a22",
     "xgboost>=3.0.1",
+    { include-group = "docs" },
+]
+docs = [
+    "furo>=2025.9.25",
+    "sphinx>=8.2.3",
 ]

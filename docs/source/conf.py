@@ -32,6 +32,11 @@ autosummary_generate = True
 add_module_names = True
 autodoc_member_order = "bysource"
 
+# Packages from optional extras that explainer modules import at module level.
+# Mocking them lets autodoc import every explainer without installing the
+# torch/stochastic extras. A new extras-gated explainer must add its package here.
+autodoc_mock_imports = ["cchvae", "countergan", "fastar"]
+
 napoleon_numpy_docstring = True
 napoleon_use_param = True
 

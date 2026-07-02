@@ -207,6 +207,10 @@ dev = [
     { name = "ty" },
     { name = "xgboost" },
 ]
+docs = [
+    { name = "furo" },
+    { name = "sphinx" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -241,6 +245,10 @@ dev = [
     { name = "torch", specifier = ">=2.8.0" },
     { name = "ty", specifier = ">=0.0.1a22" },
     { name = "xgboost", specifier = ">=3.0.1" },
+]
+docs = [
+    { name = "furo", specifier = ">=2025.9.25" },
+    { name = "sphinx", specifier = ">=8.2.3" },
 ]
 
 [[package]]
