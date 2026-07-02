@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -9,6 +10,8 @@ from celia.data import Data
 from celia.data._base import BaseData
 from celia.errors import ConfigurationError, InstancesAreWithinRangeError
 from celia.model import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class BaseExplainer(ABC):
@@ -330,8 +333,8 @@ class RegressorExplainer(BaseExplainer):
 
         if filtered_sample.shape[0] < sample.shape[0]:
             excluded_indices = sample[~out_of_range_mask].index.tolist()
-            print(
-                f"[Warning] Excluded {len(excluded_indices)} sample(s) already within target range: {excluded_indices}"
+            logger.warning(
+                "Excluded %d sample(s) already within target range: %s", len(excluded_indices), excluded_indices
             )
 
         return filtered_sample

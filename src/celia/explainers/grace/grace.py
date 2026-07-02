@@ -499,7 +499,7 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                 try:
                     feature_min_bounds.append(float(self.data.data[feature].min()))
                     feature_max_bounds.append(float(self.data.data[feature].max()))
-                except Exception as e:
+                except (KeyError, TypeError, ValueError) as e:
                     message = f"It was not possible to infer min/max bounds for feature '{feature}'."
                     raise ConfigurationError(
                         message=message,
