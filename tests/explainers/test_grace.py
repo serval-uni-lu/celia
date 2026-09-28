@@ -5,13 +5,21 @@ import pytest
 
 from celia.errors import ConfigurationError
 from celia.explainers.grace import GRACEClassifierExplainer
-from tests.explainers.classifier_test_suite import ClassifierExplainerTests
+from tests.explainers.classifier_test_suite import (
+    ClassifierExplainerTests,
+    make_learnable_classification_dataframe,
+)
 
 
 class TestGRACEClassifier(ClassifierExplainerTests):
     explainer_class = GRACEClassifierExplainer
     explainer_kwargs = {}
     generate_kwargs = {}
+
+    @pytest.fixture
+    def dummy_classification_dataframe(self):
+        """Override: GRACE needs a dataset with a real decision boundary to cross."""
+        return make_learnable_classification_dataframe()
 
     supports_sklearn = False
     supports_torch = True

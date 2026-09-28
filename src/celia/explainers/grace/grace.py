@@ -8,7 +8,7 @@ from celia._utils.dependencies import requires_torch_class
 from celia.counterfactuals import Counterfactual
 from celia.data import Data
 from celia.data._base import BaseData
-from celia.errors import ConfigurationError
+from celia.errors import ConfigurationError, NoCounterfactualsFoundError
 from celia.explainers import ClassifierExplainer
 from celia.model import BaseModel, TorchModel
 
@@ -444,6 +444,12 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                         counterfactual_prediction=cf_df["Prediction"].iloc[0],
                     )
                 )
+            if not cf_list:
+                message = "No counterfactuals found for any of the provided instances."
+                raise NoCounterfactualsFoundError(
+                    message=message,
+                    source="GRACEClassifierExplainer._generate_counterfactuals",
+                )
             return cf_list
 
         # Single instance
@@ -459,6 +465,13 @@ class GRACEClassifierExplainer(ClassifierExplainer):
             feature_selector=feature_selector,
             feature_names=feature_names,
         )
+
+        if cf_df["Prediction"].iloc[0] == original_df["Prediction"].iloc[0]:
+            message = "No counterfactual found: the prediction could not be changed within the given constraints."
+            raise NoCounterfactualsFoundError(
+                message=message,
+                source="GRACEClassifierExplainer._generate_counterfactuals",
+            )
 
         return Counterfactual(
             original_instance=original_df.drop(columns=["Prediction"]),
@@ -499,7 +512,7 @@ class GRACEClassifierExplainer(ClassifierExplainer):
                 try:
                     feature_min_bounds.append(float(self.data.data[feature].min()))
                     feature_max_bounds.append(float(self.data.data[feature].max()))
-                except Exception as e:
+                except (KeyError, TypeError, ValueError) as e:
                     message = f"It was not possible to infer min/max bounds for feature '{feature}'."
                     raise ConfigurationError(
                         message=message,

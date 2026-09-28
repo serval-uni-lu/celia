@@ -42,6 +42,7 @@ def torch_classification_model(dummy_classification_dataframe):
             x = torch.relu(self.fc1(x))
             return self.fc2(x)
 
+    torch.manual_seed(42)
     model = SimpleClassifier()
 
     # Quick training so predictions are non-trivial

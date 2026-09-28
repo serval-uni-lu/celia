@@ -55,7 +55,7 @@ class TestRegressorExplainer:
 
     def test_filter_samples_within_target_range_dataframe(self, model_trained_without_encoded_data,
                                                           celia_data_without_encoded_data,
-                                                          capsys):
+                                                          caplog):
         """Ensure samples within the target range are excluded from DataFrame input."""
         explainer = DummyRegressorExplainer(model_trained_without_encoded_data, celia_data_without_encoded_data)
 
@@ -71,13 +71,12 @@ class TestRegressorExplainer:
         assert instances_outside_range.empty
 
 
-        captured = capsys.readouterr()
-        assert "Excluded" in captured.out
-        assert "within target range" in captured.out
+        assert "Excluded" in caplog.text
+        assert "within target range" in caplog.text
 
     def test_filter_samples_within_target_range_series(self, model_trained_without_encoded_data,
                                                        celia_data_without_encoded_data,
-                                                       capsys):
+                                                       caplog):
         """Ensure Series input is converted to DataFrame internally and works correctly."""
         explainer = DummyRegressorExplainer(model_trained_without_encoded_data, celia_data_without_encoded_data)
 
@@ -89,9 +88,8 @@ class TestRegressorExplainer:
         assert isinstance(instance_outside_range, pd.DataFrame)
         assert list(instance_outside_range.columns) == list(celia_data_without_encoded_data.data.columns)
         assert instance_outside_range.empty
-        captured = capsys.readouterr()
-        assert "Excluded" in captured.out
-        assert "within target range" in captured.out
+        assert "Excluded" in caplog.text
+        assert "within target range" in caplog.text
 
     def test_generate_counterfactuals_raises_when_all_within_range(self, model_trained_without_encoded_data,
                                                                    celia_data_without_encoded_data):
