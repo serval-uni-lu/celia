@@ -176,6 +176,8 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
 
         results: list[Counterfactual] = []
         for i in range(frame.shape[0]):
+            if cf_preds[i] == orig_preds[i]:
+                continue
             original_row = pd.DataFrame([orig_restored[i]], columns=self.data.column_names)
             cf_row = pd.DataFrame([cf_restored[i]], columns=self.data.column_names)
             results.append(
@@ -185,6 +187,13 @@ class CounterGANClassifierExplainer(ClassifierExplainer):
                     original_prediction=int(orig_preds[i]),
                     counterfactual_prediction=int(cf_preds[i]),
                 )
+            )
+
+        if not results:
+            message = "No counterfactuals found: the generated samples never reached the desired class."
+            raise NoCounterfactualsFoundError(
+                message=message,
+                source="CounterGANClassifierExplainer._generate_counterfactuals",
             )
 
         return results[0] if is_single else results

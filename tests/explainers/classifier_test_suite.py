@@ -123,6 +123,82 @@ def _make_sklearn_dummy_model(df: pd.DataFrame) -> SklearnModel:
     return SklearnModel(dummy)
 
 
+def make_learnable_classification_dataframe() -> pd.DataFrame:
+    """A linearly separable dataset with the same schema as ``dummy_classification_dataframe``.
+
+    The shared 8-row fixture has an alternating target with monotonically
+    increasing features, so no decision boundary exists in feature space —
+    tree-based methods memorize it, but gradient- and GAN-based methods
+    (GRACE, CounterGAN) can never genuinely move a sample across a boundary.
+    Torch-only suites override the data fixture with this frame, where
+    class 0 occupies feature1 <= 4 and class 1 occupies feature1 >= 5.
+    """
+    import numpy as np
+
+    n = 40  # rows per class
+    feature1 = np.concatenate([np.linspace(4.0, 1.0, n), np.linspace(5.0, 8.0, n)])
+    return pd.DataFrame(
+        {
+            "feature1": feature1,
+            "feature2": feature1 * 10.0,
+            "feature3": feature1 * 100.0,
+            "target": np.repeat([0, 1], n),
+        }
+    )
+
+
+def make_countergan_classification_dataframe() -> pd.DataFrame:
+    """A linearly separable dataset tuned for CounterGAN tests.
+
+    All features are on the same scale and clustered near the decision
+    boundary so that the GAN's small perturbations can cross it. The wide
+    feature-scale gap in ``make_learnable_classification_dataframe``
+    (feature3 = 100 * feature1) prevents the GAN from flipping predictions
+    in a test setting.
+    """
+    import numpy as np
+
+    rng = np.random.RandomState(42)
+    n = 20
+    f1_0 = np.linspace(3.5, 4.4, n)
+    f1_1 = np.linspace(4.6, 5.5, n)
+    f1 = np.concatenate([f1_0, f1_1])
+    return pd.DataFrame(
+        {
+            "feature1": f1,
+            "feature2": f1 + rng.normal(0, 0.05, 2 * n),
+            "feature3": f1 + np.random.RandomState(43).normal(0, 0.05, 2 * n),
+            "target": np.repeat([0, 1], n),
+        }
+    )
+
+
+def _make_torch_dummy_model(df: pd.DataFrame) -> BaseModel:
+    """Build a ``TorchModel`` that predicts the same class for every input.
+
+    Uses a linear layer with all-zero weights and a bias strongly favoring
+    class 0, rather than returning a detached constant tensor: the input
+    stays connected to the autograd graph, so gradient-based methods (e.g.
+    GRACE) receive valid zero gradients and exhaust their search instead of
+    crashing. Zero weights also make the logits equal to the bias for any
+    input, including NaN/inf values a search may produce.
+    """
+    torch = pytest.importorskip("torch")
+
+    from celia.model import TorchModel
+
+    n_features = df.drop(columns=["target"]).shape[1]
+    n_classes = int(df["target"].nunique())
+
+    linear = torch.nn.Linear(n_features, n_classes)
+    with torch.no_grad():
+        linear.weight.zero_()
+        linear.bias.fill_(-10.0)
+        linear.bias[0] = 10.0
+
+    return TorchModel(linear)
+
+
 # ---------------------------------------------------------------------------
 # Mixin test suite
 # ---------------------------------------------------------------------------
@@ -193,15 +269,15 @@ class ClassifierExplainerTests:
         # torch-only path
         return request.getfixturevalue("torch_classification_model")
 
-    def _get_dummy_model(self, df: pd.DataFrame, request: pytest.FixtureRequest) -> BaseModel | None:
+    def _get_dummy_model(self, df: pd.DataFrame, request: pytest.FixtureRequest) -> BaseModel:
         """Return a dummy model that always predicts the same class.
 
-        Only available for sklearn-based methods.  Returns ``None`` when
-        no suitable dummy model can be constructed (torch-only methods).
+        Uses ``DummyClassifier`` for sklearn-based methods and a
+        constant-output ``TorchModel`` for torch-only methods.
         """
         if self.supports_sklearn:
             return _make_sklearn_dummy_model(df)
-        return None
+        return _make_torch_dummy_model(df)
 
     # =====================================================================
     # Core tests — always run
@@ -273,14 +349,12 @@ class ClassifierExplainerTests:
     def test_no_counterfactuals_found_raises_error(self, dummy_classification_dataframe, request):
         """``NoCounterfactualsFoundError`` when the algorithm cannot produce CFs.
 
-        Uses ``DummyClassifier(strategy='most_frequent')`` so that every
-        prediction is the same class, making counterfactuals impossible.
-        Skipped for torch-only methods where a dummy model is not available.
+        Uses a model that predicts the same class for every input
+        (``DummyClassifier(strategy='most_frequent')`` for sklearn, a
+        constant-output ``TorchModel`` for torch-only methods), making
+        counterfactuals impossible.
         """
         dummy_model = self._get_dummy_model(dummy_classification_dataframe, request)
-        if dummy_model is None:
-            pytest.skip("No dummy model available for torch-only methods")
-
         data, X = _make_data(dummy_classification_dataframe)
 
         explainer = self.explainer_class(
